@@ -1,0 +1,2674 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>衍界 YanJie AI · 决策推演工作台</title>
+<meta name="theme-color" content="#0B0F1A" />
+<meta name="description" content="衍界用四个立场 Agent 把市场、环境、你的偏好和风险拆开博弈，把凭感觉的决定变成看得见因果链的决策。基础推演长期免费。" />
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@callmebill/lxgw-wenkai-web@latest/style.css" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Noto+Sans+SC:wght@100..900&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #0B0F1A;
+    --bg-2: #0d1320;
+    --surface-1: #141A2A;
+    --surface-2: #1a2234;
+    --surface-3: #222b40;
+    --border: rgba(255,255,255,0.07);
+    --border-strong: rgba(255,255,255,0.14);
+    --text-primary: #E6EAF2;
+    --text-secondary: #9AA6BC;
+    --text-muted: #6B7689;
+    --primary: #4F8CFF;
+    --primary-hover: #6BA0FF;
+    --accent: #22D3EE;
+    --success: #34D399;
+    --warning: #FBBF24;
+    --error: #F87171;
+    --agent-market: #4F8CFF;
+    --agent-env: #34D399;
+    --agent-personal: #A78BFA;
+    --agent-risk: #F87171;
+    --glass: rgba(255,255,255,0.03);
+    --glow: 0 0 0 1px rgba(79,140,255,.28), 0 12px 36px rgba(79,140,255,.12);
+    --font-display: "Space Grotesk", "LXGW WenKai", "Noto Serif SC", serif;
+    --font-serif: "LXGW WenKai", "Noto Serif SC", serif;
+    --font-sans: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+    --font-mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+    --s-1: 4px; --s-2: 8px; --s-3: 12px; --s-4: 16px; --s-6: 24px; --s-8: 32px; --s-10: 40px; --s-12: 48px; --s-16: 64px; --s-20: 80px; --s-24: 96px;
+    --r-chip: 999px; --r-btn: 10px; --r-card: 16px; --r-modal: 20px;
+    --ease: cubic-bezier(.16,1,.3,1);
+    --t-fast: 150ms; --t-normal: 300ms;
+    --maxw: 1200px;
+  }
+  [data-theme="light"] {
+    --bg: #f5f7fb;
+    --bg-2: #eef2f8;
+    --surface-1: #ffffff;
+    --surface-2: #f3f6fb;
+    --surface-3: #e9eef6;
+    --border: rgba(15,23,42,0.10);
+    --border-strong: rgba(15,23,42,0.20);
+    --text-primary: #0f172a;
+    --text-secondary: #4a5871;
+    --text-muted: #8a96aa;
+    --glass: rgba(15,23,42,0.02);
+    --agent-market: #3b6fd4;
+    --agent-env: #0f9d6b;
+    --agent-personal: #7C5CF0;
+    --agent-risk: #e0584f;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+  body {
+    font-family: var(--font-sans);
+    background: var(--bg);
+    color: var(--text-primary);
+    line-height: 1.7;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+  body::before {
+    content: ""; position: fixed; inset: 0; z-index: -3;
+    background: radial-gradient(120% 80% at 50% -10%, var(--bg-2), var(--bg) 60%);
+  }
+  #sky { position: fixed; inset: 0; z-index: -1; width: 100%; height: 100%; opacity: 1; pointer-events: none; transition: opacity .6s var(--ease); }
+  [data-theme="light"] #sky { opacity: .4; }
+
+  /* ===== Beautify: 大气背景（极光网格 + 颗粒） ===== */
+  .atmos { position: fixed; inset: 0; z-index: -2; pointer-events: none; overflow: hidden; background: radial-gradient(42vw 42vw at 80% 10%, color-mix(in srgb, var(--accent) 20%, transparent), transparent 70%); }
+  .atmos::before, .atmos::after { content: ""; position: absolute; border-radius: 50%; filter: blur(95px); mix-blend-mode: screen; }
+  .atmos::before { width: 66vw; height: 66vw; top: -14vw; left: -8vw; opacity: .42; background: radial-gradient(circle, color-mix(in srgb, var(--primary) 60%, transparent), transparent 70%); animation: drift1 26s ease-in-out infinite alternate; }
+  .atmos::after { width: 60vw; height: 60vw; bottom: -18vw; right: -12vw; opacity: .36; background: radial-gradient(circle, color-mix(in srgb, var(--accent) 54%, transparent), transparent 70%); animation: drift2 32s ease-in-out infinite alternate; }
+  @keyframes drift1 { to { transform: translate(9vw, 7vw) scale(1.18); } }
+  @keyframes drift2 { to { transform: translate(-7vw, -5vw) scale(1.12); } }
+  /* 亮色主题：极光改用 multiply 柔和晕染，避免 screen 在白底失效 */
+  [data-theme="light"] .atmos { background: radial-gradient(44vw 44vw at 82% 8%, color-mix(in srgb, var(--accent) 12%, transparent), transparent 70%); }
+  [data-theme="light"] .atmos::before, [data-theme="light"] .atmos::after { mix-blend-mode: multiply; opacity: .14; filter: blur(82px); }
+  .grain { position: fixed; inset: 0; z-index: 9999; pointer-events: none; opacity: .03; mix-blend-mode: soft-light; background-size: 180px 180px; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); }
+
+  a { color: inherit; text-decoration: none; }
+  .container { max-width: var(--maxw); margin: 0 auto; padding: 0 var(--s-6); }
+  .mono { font-family: var(--font-mono); }
+  .hl { background: linear-gradient(120deg, var(--primary), var(--accent)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+
+  /* ===== Nav ===== */
+  header.nav {
+    position: sticky; top: 0; z-index: 50;
+    background: color-mix(in srgb, var(--bg) 82%, transparent);
+    backdrop-filter: blur(14px);
+    border-bottom: 1px solid var(--border);
+  }
+  .nav-inner { display: flex; align-items: center; gap: var(--s-6); height: 64px; }
+
+  /* ===== Brand mark ===== */
+  .brand { display: flex; align-items: center; gap: 10px; font-family: var(--font-display); font-weight: 700; font-size: 18px; letter-spacing: .2px; }
+  .brand-mark { width: 28px; height: 28px; border-radius: 8px; background: linear-gradient(135deg, var(--primary), var(--accent)); display: inline-flex; align-items: center; justify-content: center; box-shadow: 0 6px 16px -6px color-mix(in srgb, var(--primary) 70%, transparent); flex-shrink: 0; }
+  .brand-mark svg { width: 16px; height: 16px; display: block; }
+  .brand .en { font-family: var(--font-mono); font-size: 10px; color: var(--text-muted); font-weight: 500; letter-spacing: 1.2px; margin-left: 2px; }
+  .hero-badge { display: inline-flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-secondary); border: 1px solid var(--border); background: color-mix(in srgb, var(--surface-1) 80%, transparent); backdrop-filter: blur(8px); padding: 6px 12px; border-radius: var(--r-chip); margin-bottom: var(--s-4); }
+  .hero-badge .pulse { width: 7px; height: 7px; border-radius: 50%; background: var(--success); box-shadow: 0 0 0 3px color-mix(in srgb, var(--success) 25%, transparent); animation: pulse-dot 2s ease-in-out infinite; }
+  .rail-item.on { box-shadow: inset 3px 0 0 var(--primary); }
+  .astat { position: relative; }
+  .astat .st { font-variant-numeric: tabular-nums; }
+  .disclaimer { padding: var(--s-3) var(--s-4); border-radius: var(--r-btn); background: color-mix(in srgb, var(--warning) 6%, var(--surface-2)); border: 1px solid color-mix(in srgb, var(--warning) 22%, var(--border)); }
+  .disclaimer b { color: var(--warning); }
+
+  .nav-links { display: flex; gap: var(--s-6); margin-left: var(--s-4); font-size: 14px; }
+  .nav-links a { color: var(--text-secondary); transition: color var(--t-fast); }
+  .nav-links a:hover { color: var(--text-primary); }
+  .nav-right { margin-left: auto; display: flex; align-items: center; gap: var(--s-3); }
+  .spacer { flex: 1; }
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    font-family: var(--font-sans); font-weight: 500; font-size: 14px;
+    padding: var(--s-3) var(--s-6); border-radius: var(--r-btn);
+    border: 1px solid transparent; cursor: pointer; transition: all var(--t-fast) var(--ease);
+    text-decoration: none; white-space: nowrap;
+  }
+  .btn-primary { background: var(--primary); color: #fff; box-shadow: 0 6px 22px -10px color-mix(in srgb, var(--primary) 70%, transparent); }
+  .btn-primary:hover { background: var(--primary-hover); transform: translateY(-1px); box-shadow: 0 12px 32px -10px color-mix(in srgb, var(--primary) 80%, transparent); }
+  .btn-ghost { background: transparent; border-color: var(--border-strong); color: var(--text-primary); }
+  .btn-ghost:hover { border-color: var(--primary); color: var(--primary); }
+  .btn-sm { padding: var(--s-2) var(--s-4); font-size: 13px; }
+  .icon-btn { background: transparent; border: 1px solid var(--border); color: var(--text-secondary); width: 38px; height: 38px; border-radius: var(--r-btn); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; font-size: 16px; transition: all var(--t-fast); }
+  .icon-btn:hover { color: var(--text-primary); border-color: var(--border-strong); }
+  #navToggle { display: none; }
+
+
+  /* ===== Galaxy background (React Bits) · 全页氛围，Hero 仍用视频 ===== */
+  #galaxy {
+    position: fixed; inset: 0; z-index: -3;
+    width: 100%; height: 100%;
+    pointer-events: none;
+    background: #000;
+  }
+  #galaxy canvas {
+    display: block; width: 100% !important; height: 100% !important;
+  }
+  body.galaxy-on #sky { display: none !important; }
+  body.galaxy-on .atmos { opacity: .16; }
+  body.galaxy-on .grain { opacity: .02; }
+  /* 根背景交给 Galaxy，避免 body 实色盖住 fixed 负层级 */
+  html { background: #030712; }
+  body.galaxy-on {
+    background: transparent !important;
+  }
+  /* 区块半透，滚出 Hero 后能看见星系 */
+  body.galaxy-on .block {
+    background: color-mix(in srgb, var(--bg) 78%, transparent);
+  }
+  body.galaxy-on .marquee {
+    background: color-mix(in srgb, var(--surface-1) 70%, transparent);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-color: color-mix(in srgb, var(--border) 80%, transparent);
+  }
+  body.galaxy-on .ws-wrap,
+  body.galaxy-on .panel,
+  body.galaxy-on .faq-item,
+  body.galaxy-on .price,
+  body.galaxy-on .agent-card,
+  body.galaxy-on .bento > *,
+  body.galaxy-on .arch-grid > *,
+  body.galaxy-on .grid-4 > *,
+  body.galaxy-on .compare-col {
+    background: color-mix(in srgb, var(--surface-1) 88%, transparent) !important;
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+  }
+  body.galaxy-on .app-top,
+  body.galaxy-on .app-rail,
+  body.galaxy-on .app-side {
+    background: color-mix(in srgb, var(--surface-2) 85%, transparent);
+  }
+  body.galaxy-on footer {
+    background: color-mix(in srgb, var(--bg) 90%, transparent);
+  }
+  body.galaxy-on .cta-box {
+    background: color-mix(in srgb, var(--surface-2) 86%, transparent);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+  }
+  body.galaxy-on header.nav.scrolled {
+    background: color-mix(in srgb, var(--bg) 75%, transparent);
+    backdrop-filter: blur(16px);
+  }
+  /* Hero 视频层必须盖住 Galaxy（不透明视频即可） */
+  body.galaxy-on .hero-media {
+    z-index: 0;
+  }
+  body.galaxy-on .hero {
+    isolation: isolate;
+  }
+
+  /* ===== Hero (cinematic video + 衍界) ===== */
+  .hero {
+    position: relative;
+    min-height: 100vh;
+    min-height: 100dvh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: calc(64px + var(--s-10)) 0 var(--s-20);
+    overflow: hidden;
+  }
+  .hero-media {
+    position: absolute; inset: 0; z-index: 0;
+    pointer-events: none; overflow: hidden;
+    background: #030712;
+  }
+  .hero-media video,
+  .hero-media .hero-fallback {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    /* 视频构图：上星空 / 中地球 / 下草地 —— 略偏上，让标题落在太空与地球弧之间 */
+    object-position: center 32%;
+    display: block;
+  }
+  .hero-media video {
+    transform: scale(1.04);
+    filter: brightness(0.88) contrast(1.06) saturate(1.05);
+  }
+  .hero-media .hero-fallback {
+    background:
+      radial-gradient(ellipse 90% 70% at 50% 35%, rgba(30,50,90,.45), transparent 65%),
+      linear-gradient(180deg, #050a14 0%, #0a1220 45%, #061018 100%);
+  }
+  /* 三层遮罩：顶栏可读 · 中部透出视频 · 底部衔接下文 · 四周压暗保字色 */
+  .hero-scrim {
+    position: absolute; inset: 0; z-index: 1;
+    background:
+      linear-gradient(180deg,
+        rgba(11,15,26,.72) 0%,
+        rgba(11,15,26,.28) 18%,
+        rgba(11,15,26,.12) 38%,
+        rgba(11,15,26,.35) 62%,
+        rgba(11,15,26,.88) 82%,
+        var(--bg) 100%),
+      radial-gradient(ellipse 55% 48% at 50% 42%,
+        rgba(11,15,26,.15) 0%,
+        rgba(11,15,26,.55) 70%,
+        rgba(11,15,26,.82) 100%);
+  }
+  .hero-inner {
+    position: relative; z-index: 2;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+  .hero-copy {
+    max-width: 860px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: var(--s-6) var(--s-4);
+  }
+  .eyebrow {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: var(--s-4);
+    text-shadow: 0 0 24px rgba(34,211,238,.35);
+  }
+  .hero h1 {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: clamp(42px, 7vw, 76px);
+    line-height: 1.06;
+    letter-spacing: -.9px;
+    color: #fff;
+    text-shadow:
+      0 2px 4px rgba(0,0,0,.35),
+      0 12px 40px rgba(0,0,0,.55),
+      0 0 60px rgba(79,140,255,.15);
+  }
+  .hero h1 .hl {
+    background: linear-gradient(120deg, #7eb6ff, #22D3EE 55%, #a78bfa);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    filter: drop-shadow(0 0 18px rgba(34,211,238,.25));
+  }
+  .hero p.sub {
+    color: rgba(230,234,242,.88);
+    font-size: clamp(16px, 1.85vw, 19px);
+    max-width: 540px;
+    margin: var(--s-6) auto var(--s-8);
+    line-height: 1.75;
+    text-shadow: 0 2px 16px rgba(0,0,0,.5);
+  }
+  .hero-cta {
+    display: flex;
+    gap: var(--s-3);
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .hero-cta .btn {
+    min-width: 168px;
+    padding: 14px 28px;
+    font-size: 14.5px;
+    backdrop-filter: blur(10px);
+  }
+  .hero-cta .btn-primary {
+    box-shadow:
+      0 8px 28px -8px rgba(79,140,255,.65),
+      0 0 0 1px rgba(255,255,255,.08) inset;
+  }
+  .hero-cta .btn-ghost {
+    background: rgba(20,26,42,.45);
+    border-color: rgba(255,255,255,.22);
+    color: #fff;
+  }
+  .hero-cta .btn-ghost:hover {
+    background: rgba(79,140,255,.18);
+    border-color: var(--primary);
+    color: #fff;
+  }
+  .trust {
+    margin-top: var(--s-8);
+    font-size: 12.5px;
+    color: rgba(154,166,188,.9);
+    display: flex;
+    gap: var(--s-4);
+    flex-wrap: wrap;
+    justify-content: center;
+    text-shadow: 0 1px 8px rgba(0,0,0,.45);
+  }
+  .trust span::before { content: "✓ "; color: var(--success); }
+  .hero-badge {
+    margin-bottom: var(--s-5);
+    background: rgba(14,20,34,.55);
+    border-color: rgba(255,255,255,.12);
+    color: rgba(230,234,242,.9);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+  .hero-scroll {
+    position: absolute; left: 50%; bottom: 28px; transform: translateX(-50%);
+    z-index: 3; display: flex; flex-direction: column; align-items: center; gap: 6px;
+    font-family: var(--font-mono); font-size: 10px; letter-spacing: 1.6px;
+    text-transform: uppercase; color: rgba(154,166,188,.85);
+    text-decoration: none;
+    text-shadow: 0 2px 10px rgba(0,0,0,.5);
+  }
+  .hero-scroll:hover { color: var(--accent); }
+  .hero-scroll svg { width: 18px; height: 18px; color: var(--accent); animation: bounce-y 1.6s ease-in-out infinite; }
+  @keyframes bounce-y { 0%,100% { transform: translateY(0); } 50% { transform: translateY(5px); } }
+  /* 有视频时压低全局星空/极光，避免与画面打架 */
+  body.hero-video-on .atmos { opacity: .15; }
+  body.hero-video-on .grain { opacity: .02; }
+  /* 首屏导航更通透，融入视频 */
+  body.hero-video-on header.nav:not(.scrolled) {
+    background: transparent;
+    border-bottom-color: transparent;
+  }
+  [data-theme="light"] .hero-scrim {
+    background:
+      linear-gradient(180deg,
+        rgba(245,247,251,.82) 0%,
+        rgba(245,247,251,.35) 22%,
+        rgba(245,247,251,.2) 45%,
+        rgba(245,247,251,.55) 70%,
+        var(--bg) 100%),
+      radial-gradient(ellipse 60% 50% at 50% 40%,
+        rgba(245,247,251,.1) 0%,
+        rgba(245,247,251,.65) 100%);
+  }
+  [data-theme="light"] .hero h1 { color: var(--text-primary); text-shadow: 0 2px 20px rgba(255,255,255,.6); }
+  [data-theme="light"] .hero p.sub { color: var(--text-secondary); text-shadow: none; }
+  [data-theme="light"] .hero-cta .btn-ghost {
+    background: rgba(255,255,255,.7);
+    border-color: var(--border-strong);
+    color: var(--text-primary);
+  }
+  @media (max-width: 640px) {
+    .hero { padding-bottom: var(--s-24); }
+    .hero h1 { font-size: clamp(34px, 9vw, 46px); }
+    .hero-media video { object-position: center 28%; }
+    .trust { gap: var(--s-3); font-size: 12px; }
+  }
+
+  /* ===== Hero 预览截图：去除行内样式，统一由 CSS 控制 ===== */
+  .hero-shot { min-width: 0; }
+  .hero-shot .ws-wrap { min-width: 0; border: 1px solid var(--border-strong); }
+  .hero-shot .app-body { display: grid; grid-template-columns: 150px minmax(180px, 1fr) 160px; min-height: 320px; }
+  .hero-shot .app-main { padding: var(--s-4) var(--s-5); min-width: 0; }
+  .hero-shot .agent-action { opacity: 1; transform: none; }
+  .hero-shot .intervention { padding: var(--s-4); }
+  .hero-shot .intervention h4 { font-size: 14px; }
+  .hero-shot .agent-action .txt { font-size: 12px; }
+  .hero-shot .iv-opt .t { font-size: 12px; }
+  .hero-shot .panel-head h4 { font-size: 12px; }
+  .hero-shot .panel-body { padding: var(--s-3); }
+  .hero-shot .app-head h3 { font-size: 15px; }
+  .hero-shot .seg button { font-size: 11px; }
+
+  /* ===== 公用工具类 ===== */
+  .control-label--mt { margin-top: var(--s-4); }
+  .stat-pct { font-size: 18px; }
+  .foot-brand { margin-bottom: var(--s-3); }
+
+  /* ===== 无障碍：跳转主内容 ===== */
+  .skip-link { position: absolute; left: -9999px; top: 8px; z-index: 200; background: var(--primary); color: #fff; padding: var(--s-2) var(--s-4); border-radius: var(--r-btn); font-size: 14px; }
+  .skip-link:focus { left: 8px; outline: none; }
+
+  /* ===== Section base ===== */
+  .block { padding: var(--s-16) 0; border-top: 1px solid var(--border); }
+  .block-head { max-width: 680px; margin-bottom: var(--s-10); }
+  .block-head .eyebrow { color: var(--primary); }
+  .block-head h2 { font-family: var(--font-display); font-size: clamp(26px, 3.4vw, 36px); font-weight: 700; letter-spacing: -.3px; line-height: 1.2; }
+  .block-head p { color: var(--text-secondary); margin-top: var(--s-3); font-size: 15px; }
+
+  /* ===== Workspace (real app shell) ===== */
+  .ws-wrap { border: 1px solid var(--border-strong); border-radius: var(--r-modal); overflow: hidden; background: var(--surface-1); box-shadow: 0 24px 60px -28px rgba(0,0,0,.65), var(--glow); position: relative; isolation: isolate; }
+  .ws-wrap::before { content: ""; position: absolute; inset: 0 0 auto 0; height: 1px; background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--text-primary) 16%, transparent), transparent); pointer-events: none; z-index: 1; }
+  .app-top { display: flex; align-items: center; gap: var(--s-4); padding: var(--s-3) var(--s-4); border-bottom: 1px solid var(--border); background: var(--surface-2); }
+  .app-brand { font-family: var(--font-display); font-weight: 700; font-size: 15px; display: flex; align-items: center; gap: 8px; }
+  .app-brand .en { font-family: var(--font-mono); font-size: 10px; color: var(--text-muted); }
+  .app-nav { display: flex; gap: 4px; margin-left: var(--s-4); }
+  .app-nav span { font-size: 13px; padding: 5px var(--s-3); border-radius: var(--r-chip); color: var(--text-secondary); cursor: default; }
+  .app-nav span.on { background: var(--surface-3); color: var(--text-primary); }
+  .app-user { margin-left: auto; font-size: 13px; color: var(--text-secondary); display: flex; align-items: center; gap: 6px; }
+  .app-user .dot { width: 22px; height: 22px; border-radius: 50%; background: var(--surface-3); border: 1px solid var(--border-strong); display: inline-block; }
+  .app-body { display: grid; grid-template-columns: 210px 1fr 270px; min-height: 460px; }
+  .app-rail { border-right: 1px solid var(--border); padding: var(--s-4); background: var(--surface-2); }
+  .rail-title { font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text-muted); font-family: var(--font-mono); margin-bottom: var(--s-3); }
+  .rail-item { display: block; width: 100%; text-align: left; background: transparent; border: 1px solid transparent; border-radius: var(--r-btn); padding: var(--s-2) var(--s-3); margin-bottom: 6px; cursor: pointer; transition: all var(--t-fast); color: var(--text-secondary); }
+  .rail-item:hover { background: var(--surface-3); color: var(--text-primary); }
+  .rail-item.on { background: var(--surface-3); border-color: var(--border-strong); color: var(--text-primary); }
+  .rail-item .nm { font-size: 13.5px; font-weight: 500; display: block; }
+  .rail-item .mt { font-size: 11px; color: var(--text-muted); font-family: var(--font-mono); }
+  .app-main { padding: var(--s-5) var(--s-6); min-width: 0; }
+  .app-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--s-3); margin-bottom: var(--s-5); flex-wrap: wrap; }
+  .app-head h3 { font-family: var(--font-display); font-size: 17px; font-weight: 600; }
+  .app-meta { font-size: 12px; color: var(--text-muted); font-family: var(--font-mono); }
+  .timeline { position: relative; }
+  .year-axis { display: flex; gap: 0; margin-bottom: var(--s-5); position: relative; padding: 0 4px; }
+  .year-axis::before { content: ""; position: absolute; left: 12%; right: 12%; top: 5px; height: 2px; background: var(--border); z-index: 0; }
+  .year-axis::after { content: ""; position: absolute; left: 12%; width: 50%; top: 5px; height: 2px; background: linear-gradient(90deg, var(--success), var(--primary)); z-index: 0; border-radius: 2px; }
+  .year-node { flex: 1; text-align: center; padding-bottom: var(--s-2); position: relative; z-index: 1; font-size: 11px; color: var(--text-muted); font-family: var(--font-mono); letter-spacing: .3px; }
+  .year-node .dot { width: 11px; height: 11px; border-radius: 50%; background: var(--surface-3); border: 2px solid var(--border-strong); margin: 0 auto 8px; box-sizing: border-box; }
+  .year-node.done .dot { background: var(--success); border-color: var(--success); box-shadow: 0 0 0 3px color-mix(in srgb, var(--success) 22%, transparent); }
+  .year-node.cur .dot { background: var(--primary); border-color: var(--primary); box-shadow: 0 0 0 4px color-mix(in srgb, var(--primary) 28%, transparent); animation: pulse-dot 1.8s ease-in-out infinite; }
+  .year-node.cur { color: var(--text-primary); font-weight: 600; }
+  @keyframes pulse-dot { 0%, 100% { box-shadow: 0 0 0 4px color-mix(in srgb, var(--primary) 28%, transparent); } 50% { box-shadow: 0 0 0 7px color-mix(in srgb, var(--primary) 12%, transparent); } }
+  .agent-action { border-left: 3px solid var(--agent-market); background: var(--surface-2); border-radius: 0 var(--r-btn) var(--r-btn) 0; padding: var(--s-3) var(--s-4); margin-bottom: var(--s-3); opacity: 0; transform: translateY(8px); }
+  .agent-action.show { animation: rise .45s var(--ease) forwards; }
+  @keyframes rise { to { opacity: 1; transform: none; } }
+  .agent-action.env { border-color: var(--agent-env); }
+  .agent-action.personal { border-color: var(--agent-personal); }
+  .agent-action.risk { border-color: var(--agent-risk); }
+  .agent-action .who { font-size: 11px; font-weight: 600; font-family: var(--font-mono); display: flex; align-items: center; gap: 6px; }
+  .agent-action .who .pin { width: 7px; height: 7px; border-radius: 50%; }
+  .agent-action .txt { font-size: 13px; color: var(--text-primary); margin-top: 4px; line-height: 1.6; }
+  .agent-action .delta { font-family: var(--font-mono); font-size: 11px; margin-top: 4px; color: var(--success); }
+  .agent-action .delta.neg { color: var(--error); }
+  .intervention { margin-top: var(--s-5); border-radius: var(--r-card); border: 1px solid color-mix(in srgb, var(--agent-risk) 40%, var(--border)); background: linear-gradient(180deg, color-mix(in srgb, var(--agent-risk) 8%, var(--surface-1)), var(--surface-1)); padding: var(--s-5); position: relative; box-shadow: inset 0 1px 0 color-mix(in srgb, var(--agent-risk) 18%, transparent); }
+  .intervention .flag { position: absolute; top: -10px; left: var(--s-5); background: var(--agent-risk); color: #fff; font-size: 11px; font-weight: 600; padding: 2px var(--s-3); border-radius: var(--r-chip); }
+  .intervention h4 { font-family: var(--font-display); font-size: 15px; }
+  .intervention p { font-size: 13px; color: var(--text-secondary); margin: var(--s-2) 0 var(--s-4); line-height: 1.6; }
+  .iv-options { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--s-3); }
+  .iv-opt { background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--r-btn); padding: var(--s-4); cursor: pointer; transition: all var(--t-fast) var(--ease); }
+  .iv-opt:hover { border-color: var(--primary); transform: translateY(-2px); }
+  .iv-opt.chosen { border-color: var(--primary); background: color-mix(in srgb, var(--primary) 12%, var(--surface-2)); }
+  .iv-opt.chosen .t::after { content: " ✓"; color: var(--primary); font-weight: 700; }
+  .iv-opt .t { font-size: 13px; font-weight: 600; }
+  .iv-opt .prev { font-size: 11px; color: var(--text-secondary); margin-top: var(--s-2); line-height: 1.6; }
+  .iv-opt .prev b { color: var(--warning); }
+  .outcome { margin-top: var(--s-5); border-radius: var(--r-card); border: 1px solid var(--border); background: var(--surface-1); padding: var(--s-5); display: none; }
+  .outcome.show { display: block; animation: fade .4s var(--ease); }
+  .outcome-head { display: flex; align-items: center; gap: var(--s-3); margin-bottom: var(--s-3); }
+  .ov-flag { font-family: var(--font-mono); font-size: 11px; padding: 2px var(--s-3); border-radius: var(--r-chip); background: var(--primary); color: #fff; white-space: nowrap; }
+  .ov-flag.warn { background: var(--warning); color: #1a1300; }
+  .ov-flag.ok { background: var(--success); color: #04231a; }
+  .ov-flag.info { background: var(--accent); color: #04222a; }
+  .outcome-head h4 { font-family: var(--font-display); font-size: 16px; }
+  .ov-narr { font-size: 13px; line-height: 1.75; color: var(--text-secondary); min-height: 3.4em; }
+  .ov-metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--s-3); margin: var(--s-4) 0 var(--s-5); }
+  .metric { text-align: center; background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--r-btn); padding: var(--s-3); }
+  .m-val { font-family: var(--font-mono); font-size: 20px; font-weight: 600; color: var(--text-primary); letter-spacing: -.3px; tabular-nums; font-variant-numeric: tabular-nums; }
+  .m-lbl { font-size: 11px; color: var(--text-secondary); margin-top: 4px; }
+  .ov-chart { background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--r-btn); padding: var(--s-3); }
+  .ov-chart svg { width: 100%; height: 140px; display: block; }
+  .base-line { stroke: var(--border); stroke-width: 1; stroke-dasharray: 3 4; }
+  .chart-cap { font-size: 11px; color: var(--text-muted); text-align: center; margin-top: 4px; font-family: var(--font-mono); }
+  .ov-reset { margin-top: var(--s-4); background: transparent; border: 1px solid var(--border); color: var(--text-secondary); padding: var(--s-2) var(--s-5); border-radius: var(--r-btn); cursor: pointer; font-size: 13px; transition: all var(--t-fast) var(--ease); }
+  .ov-reset:hover { color: var(--text-primary); border-color: var(--primary); }
+  .app-side { border-left: 1px solid var(--border); padding: var(--s-4); background: var(--surface-2); display: flex; flex-direction: column; gap: var(--s-4); }
+  .panel { background: var(--surface-1); border: 1px solid var(--border); border-radius: var(--r-card); }
+  .panel-head { display: flex; align-items: center; justify-content: space-between; padding: var(--s-3) var(--s-4); border-bottom: 1px solid var(--border); }
+  .panel-head h4 { font-family: var(--font-display); font-size: 13.5px; font-weight: 600; }
+  .panel-head .stage { font-family: var(--font-mono); font-size: 10px; color: var(--primary); }
+  .panel-body { padding: var(--s-4); }
+  .astat { border-left: 3px solid var(--c, var(--primary)); padding: var(--s-2) var(--s-3); margin-bottom: var(--s-3); background: var(--surface-2); border-radius: 0 var(--r-btn) var(--r-btn) 0; }
+  .astat .top { display: flex; justify-content: space-between; font-size: 12px; }
+  .astat .top .name { font-weight: 600; }
+  .astat .top .st { font-family: var(--font-mono); font-size: 10px; }
+  .astat .brief { font-size: 11px; color: var(--text-secondary); margin-top: 3px; }
+  .control-label { font-size: 12px; color: var(--text-secondary); margin-bottom: var(--s-2); }
+  .seg { display: flex; gap: 4px; }
+  .seg button { flex: 1; font-size: 12px; padding: var(--s-2); border-radius: var(--r-btn); border: 1px solid var(--border); background: var(--surface-2); color: var(--text-secondary); cursor: pointer; transition: all var(--t-fast); font-family: var(--font-sans); }
+  .seg button.on { background: color-mix(in srgb, var(--primary) 14%, var(--surface-2)); border-color: var(--primary); color: var(--text-primary); }
+  .predict { font-size: 12px; color: var(--text-muted); border: 1px dashed var(--border-strong); border-radius: var(--r-btn); padding: var(--s-3); cursor: text; }
+  .disclaimer { font-size: 11px; color: var(--text-muted); margin-top: var(--s-4); display: flex; gap: 6px; line-height: 1.6; }
+
+  /* ===== Feature grid ===== */
+  .grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--s-5); }
+  .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--s-5); }
+  .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--s-4); }
+  .card { background: var(--surface-1); border: 1px solid var(--border); border-radius: var(--r-card); padding: var(--s-6); transition: border-color var(--t-fast), transform var(--t-fast); }
+  .card:hover { border-color: var(--border-strong); transform: translateY(-2px); }
+  .card .ic { width: 34px; height: 34px; border-radius: var(--r-btn); display: flex; align-items: center; justify-content: center; font-size: 17px; background: var(--surface-3); margin-bottom: var(--s-4); color: var(--primary); }
+  .card h4 { font-family: var(--font-display); font-size: 16px; font-weight: 600; margin-bottom: var(--s-2); }
+  .card p { font-size: 13.5px; color: var(--text-secondary); line-height: 1.7; }
+
+  /* ===== Architecture ===== */
+  .arch-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--s-4); }
+  .agent-card { border: 1px solid var(--border); border-radius: var(--r-card); padding: var(--s-5); background: var(--surface-1); border-top: 3px solid var(--c, var(--primary)); }
+  .agent-card .nm { font-family: var(--font-display); font-size: 15px; font-weight: 600; }
+  .agent-card .role { font-size: 11px; color: var(--text-muted); font-family: var(--font-mono); margin: 2px 0 var(--s-3); }
+  .agent-card p { font-size: 12.5px; color: var(--text-secondary); line-height: 1.6; }
+  .flow { display: flex; align-items: center; gap: var(--s-2); flex-wrap: wrap; margin-top: var(--s-6); }
+  .flow .node { font-size: 12px; font-family: var(--font-mono); padding: var(--s-2) var(--s-3); border: 1px solid var(--border); border-radius: var(--r-chip); background: var(--surface-2); color: var(--text-secondary); }
+  .flow .arr { color: var(--text-muted); }
+
+  /* ===== Workflow ===== */
+  .steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--s-4); counter-reset: s; }
+  .step { position: relative; padding: var(--s-5); border: 1px solid var(--border); border-radius: var(--r-card); background: var(--surface-1); }
+  .step .n { font-family: var(--font-mono); font-size: 12px; color: var(--primary); font-weight: 600; }
+  .step h4 { font-family: var(--font-display); font-size: 15px; margin: var(--s-2) 0; }
+  .step p { font-size: 12.5px; color: var(--text-secondary); line-height: 1.6; }
+
+  /* ===== Stats ===== */
+  .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--s-4); }
+  .stat { text-align: center; padding: var(--s-6) var(--s-3); border: 1px solid var(--border); border-radius: var(--r-card); background: var(--surface-1); }
+  .stat .big { font-family: var(--font-mono); font-size: 34px; font-weight: 700; color: var(--text-primary); line-height: 1; }
+  .stat .big .cv { color: var(--primary); }
+  .stat .lbl { font-size: 12.5px; color: var(--text-secondary); margin-top: var(--s-2); }
+
+  /* ===== Compare ===== */
+  .compare { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--s-4); }
+  .compare-col { border: 1px solid var(--border); border-radius: var(--r-card); padding: var(--s-6); background: var(--surface-1); }
+  .compare-col h4 { font-family: var(--font-display); font-size: 16px; margin-bottom: var(--s-4); }
+  .compare-col ul { list-style: none; font-size: 13px; }
+  .compare-col li { padding: var(--s-2) 0; border-bottom: 1px solid var(--border); color: var(--text-secondary); display: flex; gap: 8px; }
+  .compare-col li:last-child { border-bottom: none; }
+  .compare-col li .mk { font-weight: 700; }
+  .compare-col li .mk.y { color: var(--success); }
+  .compare-col li .mk.n { color: var(--error); }
+  .compare-col li .mk.neutral { color: var(--warning); }
+
+  /* ===== Pricing ===== */
+  .price-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--s-4); align-items: stretch; }
+  .price { border: 1px solid var(--border); border-radius: var(--r-card); padding: var(--s-6); background: var(--surface-1); display: flex; flex-direction: column; }
+  .price.featured { border-color: var(--primary); box-shadow: 0 0 0 1px var(--primary); }
+  .price .tier { font-family: var(--font-display); font-size: 15px; font-weight: 600; }
+  .price .amt { font-family: var(--font-mono); font-size: 30px; font-weight: 700; margin: var(--s-3) 0 2px; }
+  .price .amt small { font-size: 13px; color: var(--text-muted); font-weight: 400; }
+  .price .desc { font-size: 12.5px; color: var(--text-secondary); margin-bottom: var(--s-4); }
+  .price ul { list-style: none; font-size: 13px; flex: 1; }
+  .price li { padding: var(--s-2) 0; color: var(--text-secondary); display: flex; gap: 8px; }
+  .price li::before { content: "✓"; color: var(--success); }
+  .price .btn { margin-top: var(--s-5); width: 100%; }
+
+  /* ===== Insights ===== */
+  .insight { border: 1px solid var(--border); border-radius: var(--r-card); padding: var(--s-5); background: var(--surface-1); transition: border-color var(--t-fast), transform var(--t-fast); display: block; }
+  .insight:hover { border-color: var(--border-strong); transform: translateY(-2px); }
+  .insight .tag { font-family: var(--font-mono); font-size: 10px; letter-spacing: 1px; text-transform: uppercase; color: var(--accent); }
+  .insight h4 { font-family: var(--font-display); font-size: 15px; margin: var(--s-2) 0; line-height: 1.4; }
+  .insight p { font-size: 12.5px; color: var(--text-secondary); line-height: 1.6; }
+  .insight .read { font-size: 11px; color: var(--text-muted); font-family: var(--font-mono); margin-top: var(--s-3); }
+
+  /* ===== FAQ ===== */
+  .faq-item { border: 1px solid var(--border); border-radius: var(--r-card); margin-bottom: var(--s-3); background: var(--surface-1); overflow: hidden; }
+  .faq-item summary { cursor: pointer; padding: var(--s-4) var(--s-5); font-size: 14.5px; font-weight: 500; list-style: none; display: flex; justify-content: space-between; align-items: center; gap: var(--s-3); }
+  .faq-item summary::-webkit-details-marker { display: none; }
+  .faq-item summary .pm { color: var(--text-muted); font-family: var(--font-mono); transition: transform var(--t-fast); }
+  .faq-item[open] summary .pm { transform: rotate(45deg); }
+  .faq-item .ans { padding: 0 var(--s-5) var(--s-4); font-size: 13.5px; color: var(--text-secondary); line-height: 1.75; }
+
+  /* ===== CTA ===== */
+  .cta-box { text-align: center; padding: var(--s-16) var(--s-6); border-radius: var(--r-modal); background: var(--surface-1); border: 1px solid var(--border-strong); }
+  .cta-box h2 { font-family: var(--font-display); font-size: clamp(24px, 3vw, 32px); font-weight: 700; }
+  .cta-box p { color: var(--text-secondary); margin: var(--s-3) 0 var(--s-6); font-size: 15px; }
+
+  /* ===== Footer ===== */
+  footer { border-top: 1px solid var(--border); padding: var(--s-12) 0 var(--s-6); }
+  .foot-grid { display: grid; grid-template-columns: 1.5fr 1fr 1fr 1fr; gap: var(--s-6); }
+  .foot-grid h5 { font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); font-family: var(--font-mono); margin-bottom: var(--s-3); }
+  .foot-grid a { display: block; font-size: 13px; color: var(--text-secondary); padding: 4px 0; transition: color var(--t-fast); }
+  .foot-grid a:hover { color: var(--primary); }
+  .foot-grid p { font-size: 13px; color: var(--text-secondary); line-height: 1.7; max-width: 280px; }
+  .foot-bottom { margin-top: var(--s-10); padding-top: var(--s-5); border-top: 1px solid var(--border); display: flex; justify-content: space-between; flex-wrap: wrap; gap: var(--s-3); font-size: 12px; color: var(--text-muted); }
+
+  /* ===== Reveal ===== */
+  .reveal { opacity: 0; transform: translateY(16px); transition: opacity .7s var(--ease), transform .7s var(--ease); }
+  .reveal.in { opacity: 1; transform: none; }
+  .reveal[data-d="2"] { transition-delay: .08s; }
+  .reveal[data-d="3"] { transition-delay: .16s; }
+  .reveal[data-d="4"] { transition-delay: .24s; }
+  .reveal[data-d="5"] { transition-delay: .32s; }
+  .reveal[data-d="6"] { transition-delay: .40s; }
+
+  /* ===== Focus ===== */
+  :where(a, button, .rail-item, .iv-opt, summary, .predict, .icon-btn, .seg button):focus-visible {
+    outline: 2px solid var(--primary); outline-offset: 2px; border-radius: 4px;
+  }
+
+  /* ===== Beautify: 高级质感细节 ===== */
+  ::selection { background: color-mix(in srgb, var(--primary) 38%, transparent); color: #fff; }
+  html { scrollbar-width: thin; scrollbar-color: color-mix(in srgb, var(--primary) 40%, var(--surface-3)) var(--bg); }
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: color-mix(in srgb, var(--primary) 38%, var(--surface-3)); border: 2px solid var(--bg); border-radius: 999px; }
+  ::-webkit-scrollbar-thumb:hover { background: color-mix(in srgb, var(--primary) 60%, var(--surface-3)); }
+  .card, .bento .cell, .agent-card, .step, .stat, .compare-col, .price, .insight { transition: border-color var(--t-fast), transform var(--t-fast), box-shadow var(--t-fast); }
+  .card:hover, .bento .cell:hover, .agent-card:hover, .step:hover, .stat:hover, .compare-col:hover, .price:hover, .insight:hover {
+    box-shadow: 0 20px 44px -26px color-mix(in srgb, var(--primary) 45%, transparent);
+  }
+  .price.featured { box-shadow: 0 0 0 1px var(--primary), 0 24px 50px -28px color-mix(in srgb, var(--primary) 55%, transparent); }
+
+  /* ===== v9 升级：滚动进度 & 导航 ===== */
+  .progress { position: fixed; top: 0; left: 0; right: 0; height: 2px; z-index: 60; pointer-events: none; }
+  .progress .bar { height: 100%; background: linear-gradient(90deg, var(--primary), var(--accent)); transform-origin: left; transform: scaleX(0); }
+  header.nav.scrolled { background: color-mix(in srgb, var(--bg) 94%, transparent); box-shadow: 0 8px 24px -18px rgba(0,0,0,.5); }
+  .block, .hero { scroll-margin-top: 72px; }
+  .kbd-chip { display: inline-flex; align-items: center; gap: 5px; font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); border: 1px solid var(--border); border-radius: 6px; padding: 4px 8px; cursor: pointer; background: transparent; transition: all var(--t-fast); }
+  .kbd-chip:hover { color: var(--text-primary); border-color: var(--border-strong); }
+
+  /* ===== v9 升级：Kinetic Marquee ===== */
+  .marquee { overflow: hidden; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); padding: var(--s-4) 0; -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent); mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent); }
+  .marquee-track { display: flex; gap: var(--s-8); width: max-content; animation: mq 32s linear infinite; }
+  .marquee:hover .marquee-track { animation-play-state: paused; }
+  .marquee-track span { font-family: var(--font-mono); font-size: 12.5px; letter-spacing: 2px; color: var(--text-muted); white-space: nowrap; display: flex; align-items: center; gap: var(--s-8); }
+  .marquee-track span::after { content: "✦"; color: var(--primary); font-size: 10px; }
+  @keyframes mq { to { transform: translateX(-50%); } }
+
+  /* ===== v9 升级：Bento 网格 ===== */
+  .bento { display: grid; grid-template-columns: 1.15fr 1fr 1fr; gap: var(--s-4); }
+  .bento .cell { position: relative; overflow: hidden; background: var(--surface-1); border: 1px solid var(--border); border-radius: var(--r-card); padding: var(--s-6); transition: border-color var(--t-fast), transform var(--t-fast); }
+  .bento .cell:hover { border-color: var(--border-strong); transform: translateY(-2px); }
+  .bento .cell-a { grid-row: span 2; display: flex; flex-direction: column; }
+  .bento .cell-d { grid-column: span 2; }
+  .bento h4 { font-family: var(--font-display); font-size: 16px; font-weight: 600; margin-bottom: var(--s-2); }
+  .bento p { font-size: 13.5px; color: var(--text-secondary); line-height: 1.7; }
+  .bento .ic { width: 34px; height: 34px; border-radius: var(--r-btn); display: flex; align-items: center; justify-content: center; background: var(--surface-3); margin-bottom: var(--s-4); color: var(--primary); }
+  .bento .ic svg { width: 18px; height: 18px; }
+  .mini-debate { margin-top: auto; padding-top: var(--s-5); }
+  .mini-debate .line { display: flex; gap: 8px; align-items: baseline; font-size: 12.5px; padding: var(--s-3) 0 0; border-top: 1px dashed var(--border); color: var(--text-secondary); }
+  .mini-debate .line .who { font-family: var(--font-mono); font-size: 10.5px; flex-shrink: 0; }
+  .mini-debate .line .say { min-height: 1.6em; }
+  .chipflow { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: var(--s-4); }
+  .chipflow .chip { font-family: var(--font-mono); font-size: 10.5px; padding: 4px 8px; border-radius: var(--r-chip); border: 1px solid var(--border); background: var(--surface-2); color: var(--text-secondary); }
+  .chipflow .arr { color: var(--text-muted); font-size: 11px; }
+  .mini-opts { display: flex; gap: 6px; margin-top: var(--s-4); }
+  .mini-opts .mo { flex: 1; text-align: center; font-size: 11px; font-family: var(--font-mono); padding: var(--s-2) 4px; border-radius: var(--r-btn); border: 1px solid var(--border); background: var(--surface-2); color: var(--text-secondary); }
+  .mini-opts .mo.hot { border-color: var(--primary); color: var(--text-primary); background: color-mix(in srgb, var(--primary) 12%, var(--surface-2)); }
+  .mini-spark { margin-top: var(--s-4); width: 100%; height: 56px; display: block; }
+  @media (max-width: 980px) { .bento { grid-template-columns: 1fr 1fr; } .bento .cell-a { grid-row: auto; grid-column: span 2; } .bento .cell-d { grid-column: span 2; } }
+  @media (max-width: 640px) { .bento { grid-template-columns: 1fr; } .bento .cell-a, .bento .cell-d { grid-column: auto; } }
+
+  /* ===== v9 升级：Spotlight 卡片 ===== */
+  [data-spot] { position: relative; }
+  [data-spot]::before { content: ""; position: absolute; inset: 0; border-radius: inherit; background: radial-gradient(320px circle at var(--mx, 50%) var(--my, 50%), color-mix(in srgb, var(--primary) 9%, transparent), transparent 55%); opacity: 0; transition: opacity var(--t-normal); pointer-events: none; z-index: 0; }
+  [data-spot]:hover::before { opacity: 1; }
+  [data-spot] > * { position: relative; z-index: 1; }
+
+  /* ===== v9 升级：磁吸 / 3D 倾斜 ===== */
+  .magnetic { transition: transform .25s var(--ease); will-change: transform; }
+  .tilt { transform-style: preserve-3d; transition: transform .4s var(--ease); will-change: transform; }
+
+  /* ===== v9 升级：骨架屏 ===== */
+  .sk { position: relative; overflow: hidden; background: var(--surface-2); border-radius: var(--r-btn); }
+  .sk::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--text-primary) 6%, transparent), transparent); transform: translateX(-100%); animation: skslide 1.1s infinite; }
+  @keyframes skslide { to { transform: translateX(100%); } }
+
+  /* ===== v9 升级：Command Palette ===== */
+  .palette-mask { position: fixed; inset: 0; z-index: 100; background: rgba(4,7,14,.55); backdrop-filter: blur(4px); display: none; align-items: flex-start; justify-content: center; padding-top: 14vh; }
+  .palette-mask.open { display: flex; animation: fade .18s var(--ease); }
+  .palette { width: min(560px, calc(100vw - 32px)); background: var(--surface-1); border: 1px solid var(--border-strong); border-radius: var(--r-card); box-shadow: 0 32px 80px -30px rgba(0,0,0,.7); overflow: hidden; animation: palin .22s var(--ease); }
+  @keyframes palin { from { opacity: 0; transform: translateY(-10px) scale(.98); } }
+  .palette-input { display: flex; align-items: center; gap: var(--s-3); padding: var(--s-4) var(--s-5); border-bottom: 1px solid var(--border); }
+  .palette-input svg { width: 16px; height: 16px; color: var(--text-muted); flex-shrink: 0; }
+  .palette-input input { flex: 1; background: transparent; border: none; outline: none; color: var(--text-primary); font-family: var(--font-sans); font-size: 15px; }
+  .palette-input input::placeholder { color: var(--text-muted); }
+  .palette-list { max-height: 320px; overflow-y: auto; padding: var(--s-2); }
+  .pal-item { display: flex; align-items: center; gap: var(--s-3); padding: var(--s-3) var(--s-4); border-radius: var(--r-btn); cursor: pointer; font-size: 14px; color: var(--text-secondary); }
+  .pal-item .tag { margin-left: auto; font-family: var(--font-mono); font-size: 10px; color: var(--text-muted); border: 1px solid var(--border); border-radius: 5px; padding: 1px 6px; }
+  .pal-item.sel { background: color-mix(in srgb, var(--primary) 14%, var(--surface-2)); color: var(--text-primary); }
+  .pal-empty { padding: var(--s-6); text-align: center; font-size: 13px; color: var(--text-muted); }
+  .palette-foot { display: flex; gap: var(--s-4); padding: var(--s-3) var(--s-5); border-top: 1px solid var(--border); font-family: var(--font-mono); font-size: 10.5px; color: var(--text-muted); }
+
+  @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes blink { 50% { opacity: 0; } }
+
+  @media (max-width: 980px) {
+    .hero { padding-top: calc(64px + var(--s-8)); }
+    .app-body { grid-template-columns: 1fr; }
+    .hero-shot .ws-wrap { min-width: auto; }
+    .hero-shot .app-body { grid-template-columns: 1fr; }
+    .app-rail { border-right: none; border-bottom: 1px solid var(--border); display: flex; gap: var(--s-2); overflow-x: auto; padding: var(--s-3); }
+    .rail-title { display: none; }
+    .rail-item { min-width: 140px; margin-bottom: 0; }
+    .app-side { border-left: none; border-top: 1px solid var(--border); }
+    .grid-4, .arch-grid, .steps, .stats-grid { grid-template-columns: repeat(2, 1fr); }
+    .grid-3, .compare, .price-grid { grid-template-columns: 1fr; }
+    .foot-grid { grid-template-columns: 1fr 1fr; }
+  }
+  @media (max-width: 640px) {
+    .gooey-nav-container.nav-links { display: none; }
+    #navToggle { display: inline-flex; }
+    .gooey-nav-container.nav-links.open { display: flex; position: absolute; top: 62px; left: 0; right: 0; flex-direction: column; background: color-mix(in srgb, var(--bg) 96%, transparent); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); padding: var(--s-4) var(--s-6); gap: var(--s-3); z-index: 40; }
+    .gooey-nav-container.nav-links.open nav ul { flex-direction: column; gap: 0.5em; }
+    .gooey-nav-container.nav-links.open .effect { display: none; }
+    .grid-2, .grid-4, .arch-grid, .steps, .stats-grid { grid-template-columns: 1fr; }
+    .iv-options, .ov-metrics { grid-template-columns: 1fr; }
+    .app-nav { display: none; }
+  }
+
+  /* ===== v10 全面升级：控制台质感 ===== */
+  .app-top { min-height: 48px; }
+  .app-brand { align-items: center; gap: 8px; }
+  .rail-item .mt { display: block; margin-top: 2px; }
+  .agent-action { transition: border-color var(--t-fast), background var(--t-fast); }
+  .agent-action:hover { background: var(--surface-3); }
+  .iv-opt { position: relative; overflow: hidden; }
+  .iv-opt::before { content: ""; position: absolute; inset: 0; background: radial-gradient(120px circle at var(--mx, 50%) var(--my, 50%), color-mix(in srgb, var(--primary) 10%, transparent), transparent 60%); opacity: 0; transition: opacity var(--t-normal); pointer-events: none; }
+  .iv-opt:hover::before { opacity: 1; }
+  .outcome { border-color: var(--border-strong); box-shadow: 0 16px 40px -24px rgba(0,0,0,.5); }
+  .panel { overflow: hidden; }
+  .stat .big { background: linear-gradient(180deg, var(--text-primary), color-mix(in srgb, var(--text-primary) 70%, var(--primary))); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .price.featured .tier::after { content: " 推荐"; font-size: 11px; color: var(--primary); font-family: var(--font-mono); }
+  .block-head h2 { max-width: 18em; }
+  .cta-box { background: linear-gradient(180deg, color-mix(in srgb, var(--primary) 8%, var(--surface-1)), var(--surface-1)); box-shadow: var(--glow); }
+  @media (max-width: 980px) {
+    .year-axis::before, .year-axis::after { left: 8%; right: 8%; width: auto; }
+    .year-axis::after { width: 42%; }
+  }
+
+
+
+  /* ===== VariableProximity 近距可变字重 ===== */
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@100..900&display=swap');
+  .variable-proximity {
+    font-family: "Noto Sans SC", var(--font-sans), sans-serif;
+    font-optical-sizing: auto;
+  }
+  .variable-proximity .vp-letter {
+    display: inline-block;
+    will-change: font-variation-settings;
+    font-variation-settings: 'wght' 600;
+    transition: none;
+  }
+  .variable-proximity .vp-letter.is-hl {
+    background: linear-gradient(120deg, #7eb6ff, #22D3EE 55%, #a78bfa);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    filter: drop-shadow(0 0 18px rgba(34,211,238,.25));
+  }
+  .variable-proximity .vp-space {
+    display: inline-block;
+    width: 0.3em;
+  }
+  .sr-only {
+    position: absolute;
+    width: 1px; height: 1px;
+    padding: 0; margin: -1px;
+    overflow: hidden; clip: rect(0,0,0,0);
+    white-space: nowrap; border: 0;
+  }
+  .hero-prox {
+    position: relative;
+    display: inline-block;
+    max-width: 100%;
+  }
+  /* 覆盖原先 h1 .hl，改由字母级控制 */
+  .hero h1.variable-proximity .hl { all: unset; }
+
+
+  /* ===== GooeyNav 黏腻流体导航 ===== */
+  :root {
+    --gooey-ease: linear(
+      0, 0.068, 0.19 2.7%, 0.804 8.1%, 1.037, 1.199 13.2%, 1.245, 1.27 15.8%,
+      1.274, 1.272 17.4%, 1.249 19.1%, 0.996 28%, 0.949, 0.928 33.3%, 0.926,
+      0.933 36.8%, 1.001 45.6%, 1.013, 1.019 50.8%, 1.018 54.4%, 1 63.1%,
+      0.995 68%, 1.001 85%, 1
+    );
+    --color-1: #4F8CFF;
+    --color-2: #22D3EE;
+    --color-3: #A78BFA;
+    --color-4: #F8FAFC;
+  }
+  .gooey-nav-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+  .gooey-nav-container nav {
+    display: flex;
+    position: relative;
+    transform: translate3d(0, 0, 0.01px);
+  }
+  .gooey-nav-container nav ul {
+    display: flex;
+    gap: 0.35em;
+    list-style: none;
+    padding: 0 0.25em;
+    margin: 0;
+    position: relative;
+    z-index: 3;
+    color: var(--text-secondary);
+  }
+  .gooey-nav-container nav ul li {
+    border-radius: 100vw;
+    position: relative;
+    cursor: pointer;
+    transition: color 0.3s ease, box-shadow 0.3s ease;
+    box-shadow: 0 0 0.5px 1.5px transparent;
+    color: inherit;
+  }
+  .gooey-nav-container nav ul li a {
+    display: inline-block;
+    padding: 0.45em 0.95em;
+    font-size: 14px;
+    color: inherit;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+  .gooey-nav-container nav ul li:focus-within:has(:focus-visible) {
+    box-shadow: 0 0 0.5px 1.5px color-mix(in srgb, var(--primary) 70%, white);
+  }
+  .gooey-nav-container nav ul li::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 100vw;
+    background: #fff;
+    opacity: 0;
+    transform: scale(0);
+    transition: all 0.3s ease;
+    z-index: -1;
+  }
+  .gooey-nav-container nav ul li.active {
+    color: #0B0F1A;
+    text-shadow: none;
+  }
+  .gooey-nav-container nav ul li.active::after {
+    opacity: 1;
+    transform: scale(1);
+  }
+  .gooey-nav-container .effect {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 0;
+    height: 0;
+    opacity: 1;
+    pointer-events: none;
+    display: grid;
+    place-items: center;
+    z-index: 1;
+  }
+  .gooey-nav-container .effect.text {
+    color: #fff;
+    transition: color 0.3s ease;
+    font-size: 14px;
+    font-weight: 500;
+  }
+  .gooey-nav-container .effect.text.active {
+    color: #0B0F1A;
+  }
+  /* 去掉黑底板 gooey 滤镜，避免在视频/透明导航上露出黑色方块 */
+  .gooey-nav-container .effect.filter {
+    filter: none;
+    mix-blend-mode: normal;
+    overflow: visible;
+  }
+  .gooey-nav-container .effect.filter::before {
+    content: none;
+    display: none;
+  }
+  .gooey-nav-container .effect.filter::after {
+    content: none;
+    display: none;
+  }
+  /* 粒子本身保留彩色圆点溅射；高亮胶囊仍由 li.active::after 负责 */
+  .gooey-nav-container {
+    overflow: visible;
+  }
+  header.nav {
+    overflow: visible;
+  }
+  .gooey-nav-container .particle,
+  .gooey-nav-container .point {
+    display: block;
+    opacity: 0;
+    width: 18px;
+    height: 18px;
+    border-radius: 100%;
+    transform-origin: center;
+  }
+  .gooey-nav-container .particle {
+    --time: 5s;
+    position: absolute;
+    top: calc(50% - 8px);
+    left: calc(50% - 8px);
+    animation: gooey-particle calc(var(--time)) ease 1 -350ms;
+  }
+  .gooey-nav-container .point {
+    background: var(--color);
+    opacity: 1;
+    animation: gooey-point calc(var(--time)) ease 1 -350ms;
+  }
+  @keyframes gooey-particle {
+    0% {
+      transform: rotate(0deg) translate(calc(var(--start-x)), calc(var(--start-y)));
+      opacity: 1;
+      animation-timing-function: cubic-bezier(0.55, 0, 1, 0.45);
+    }
+    70% {
+      transform: rotate(calc(var(--rotate) * 0.5)) translate(calc(var(--end-x) * 1.2), calc(var(--end-y) * 1.2));
+      opacity: 1;
+      animation-timing-function: ease;
+    }
+    85% {
+      transform: rotate(calc(var(--rotate) * 0.66)) translate(calc(var(--end-x)), calc(var(--end-y)));
+      opacity: 1;
+    }
+    100% {
+      transform: rotate(calc(var(--rotate) * 1.2)) translate(calc(var(--end-x) * 0.5), calc(var(--end-y) * 0.5));
+      opacity: 1;
+    }
+  }
+  @keyframes gooey-point {
+    0% {
+      transform: scale(0);
+      opacity: 0;
+      animation-timing-function: cubic-bezier(0.55, 0, 1, 0.45);
+    }
+    25% { transform: scale(calc(var(--scale) * 0.25)); }
+    38% { opacity: 1; }
+    65% {
+      transform: scale(var(--scale));
+      opacity: 1;
+      animation-timing-function: ease;
+    }
+    85% { transform: scale(var(--scale)); opacity: 1; }
+    100% { transform: scale(0); opacity: 0; }
+  }
+  /* 移动端仍用折叠菜单，隐藏 gooey 特效层 */
+  @media (max-width: 900px) {
+    .gooey-nav-container .effect { display: none !important; }
+    .gooey-nav-container nav ul li.active { color: var(--primary); }
+    .gooey-nav-container nav ul li.active::after { display: none; }
+  }
+
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: .001ms !important; transition-duration: .001ms !important; }
+    .reveal { opacity: 1; transform: none; }
+    html { scroll-behavior: auto; }
+  }
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">跳到主内容</a>
+<div id="galaxy" class="galaxy-container" aria-hidden="true"></div>
+<canvas id="sky" hidden></canvas>
+<div class="atmos" aria-hidden="true"></div>
+<div class="grain" aria-hidden="true"></div>
+<div class="progress" aria-hidden="true"><div class="bar" id="scrollbar"></div></div>
+
+<!-- ===== Nav ===== -->
+<header class="nav">
+  <div class="container nav-inner">
+    <div class="brand"><span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M5 8l7-4 7 4M5 16l7 4 7-4"/></svg></span>衍界<span class="en">YANJIE</span></div>
+    <div class="gooey-nav-container nav-links" id="gooeyNav">
+      <nav>
+        <ul id="navLinks">
+          <li class="active"><a href="#workspace">工作台</a></li>
+          <li><a href="#features">能力</a></li>
+          <li><a href="#architecture">架构</a></li>
+          <li><a href="#pricing">价格</a></li>
+          <li><a href="#faq">问答</a></li>
+        </ul>
+      </nav>
+      <span class="effect filter" aria-hidden="true"></span>
+      <span class="effect text" aria-hidden="true"></span>
+    </div>
+    <div class="spacer"></div>
+    <div class="nav-right">
+      <button class="kbd-chip" id="palOpen" title="快速跳转 (Ctrl/⌘ + K)">⌘K</button>
+      <button class="icon-btn" id="themeToggle" title="切换主题" aria-label="切换主题">◐</button>
+      <a href="#workspace" class="btn btn-ghost btn-sm">登录</a>
+      <a href="#workspace" class="btn btn-primary btn-sm">免费开始</a>
+      <button class="icon-btn" id="navToggle" aria-label="菜单">☰</button>
+    </div>
+  </div>
+</header>
+
+<!-- ===== Hero ===== -->
+<section class="hero" id="main">
+  <div class="hero-media" aria-hidden="true">
+    <video id="heroVideo" autoplay muted loop playsinline preload="metadata">
+      <source src="video.mp4" type="video/mp4" />
+    </video>
+    <div class="hero-fallback" id="heroFallback" hidden></div>
+    <div class="hero-scrim"></div>
+  </div>
+
+  <div class="container hero-inner">
+    <div class="hero-copy">
+      <div class="hero-badge"><span class="pulse" aria-hidden="true"></span>AI 决策推演工作台 · 视频首屏 + Galaxy 氛围</div>
+      <div class="eyebrow">DECISION SIMULATION WORKBENCH</div>
+      <div class="hero-prox" id="heroProx">
+        <h1 class="variable-proximity" id="heroTitle" data-label="重大决定，先推演一遍再下注">重大决定，<br>先<span class="hl">推演</span>一遍再下注</h1>
+      </div>
+      <p class="sub">站在更高视角看清因果链。四个立场 Agent 拆开市场、环境、你的偏好与风险——关键节点由你拍板，你始终在驾驶位。</p>
+      <div class="hero-cta">
+        <a href="#workspace" class="btn btn-primary">开始免费推演</a>
+        <a href="#workspace" class="btn btn-ghost">看产品工作台 →</a>
+      </div>
+      <div class="trust">
+        <span>基础推演长期免费</span>
+        <span>不卖课 · 不荐股</span>
+        <span>全程透明可解释</span>
+        <span>模拟参考 · 非投资建议</span>
+      </div>
+    </div>
+  </div>
+
+  <a class="hero-scroll" href="#workspace" aria-label="滚动到工作台">
+    <span>Scroll · 进入推演</span>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg>
+  </a>
+</section>
+
+<!-- ===== Marquee ===== -->
+<div class="marquee" aria-hidden="true">
+  <div class="marquee-track">
+    <span>多立场博弈</span><span>因果链可追溯</span><span>关键节点你拍板</span><span>反事实对照</span><span>决策日记</span><span>三层记忆</span><span>全程透明</span><span>不卖课不荐股</span>
+    <span>多立场博弈</span><span>因果链可追溯</span><span>关键节点你拍板</span><span>反事实对照</span><span>决策日记</span><span>三层记忆</span><span>全程透明</span><span>不卖课不荐股</span>
+  </div>
+</div>
+
+<!-- ===== Workspace (real interactive app) ===== -->
+<section class="block" id="workspace">
+  <div class="container">
+    <div class="block-head reveal">
+      <div class="eyebrow">产品工作台</div>
+      <h2>不是报告，是一个能对话的推演间</h2>
+      <p>左边选场景，中间看四个 Agent 怎么吵，关键节点你拍板，右边随时调策略。下面这块是真实可点的。</p>
+    </div>
+    <div class="ws-wrap reveal">
+      <div class="app-top">
+        <div class="app-brand"><span class="brand-mark" style="width:22px;height:22px;border-radius:6px" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M5 8l7-4 7 4M5 16l7 4 7-4"/></svg></span>衍界<span class="en">YJ</span></div>
+        <div class="app-nav"><span class="on">推演工作台</span><span>场景库</span><span>决策日记</span></div>
+        <div class="app-user"><span class="dot"></span>我的推演 ▾</div>
+      </div>
+      <div class="app-body">
+        <aside class="app-rail">
+          <div class="rail-title">我的场景</div>
+          <button class="rail-item on" data-sc="milktea"><span class="nm">奶茶店创业</span><span class="mt">创业 · 入门</span></button>
+          <button class="rail-item" data-sc="job"><span class="nm">职场跳槽</span><span class="mt">职业 · 高频</span></button>
+          <button class="rail-item" data-sc="house"><span class="nm">买房决策</span><span class="mt">家庭 · 复杂</span></button>
+          <button class="rail-item" data-sc="invest"><span class="nm">投资理财</span><span class="mt">投资 · 风险</span></button>
+          <button class="rail-item" data-sc="side"><span class="nm">副业试水</span><span class="mt">创业 · 轻量</span></button>
+          <button class="rail-item" data-sc="grad"><span class="nm">考研 vs 就业</span><span class="mt">职业 · 学生</span></button>
+        </aside>
+        <section class="app-main">
+          <div class="app-head">
+            <h3 id="wsTitle">奶茶店创业 · 第 2 年推演中</h3>
+            <div class="app-meta" id="wsMeta">预算 20万 · 杭州</div>
+          </div>
+          <div class="year-axis">
+            <div class="year-node done"><div class="dot"></div>Y0 启动</div>
+            <div class="year-node done"><div class="dot"></div>Y1 爬坡</div>
+            <div class="year-node cur"><div class="dot"></div>Y2 博弈</div>
+            <div class="year-node"><div class="dot"></div>Y3 结局</div>
+          </div>
+          <div class="timeline" id="wsTimeline"></div>
+          <div class="intervention" id="wsInterv">
+            <span class="flag">关键节点 · 需你决策</span>
+            <h4 id="wsQ">现金流告急：第二年该如何应对？</h4>
+            <p id="wsQdesc">风险 Agent 判定当前安全垫不足。你的选择将直接改写后续时间线走向。</p>
+            <div class="iv-options" id="wsOpts"></div>
+          </div>
+          <div class="outcome" id="outcome">
+            <div class="outcome-head">
+              <span class="ov-flag" id="ovFlag">推演结局</span>
+              <h4 id="ovTitle">—</h4>
+            </div>
+            <p class="ov-narr" id="ovNarr"></p>
+            <div class="ov-metrics">
+              <div class="metric"><div class="m-val" id="m1">—</div><div class="m-lbl">回本周期</div></div>
+              <div class="metric"><div class="m-val" id="m2">—</div><div class="m-lbl">现金安全垫</div></div>
+              <div class="metric"><div class="m-val" id="m3">—</div><div class="m-lbl">推演胜率</div></div>
+            </div>
+            <div class="ov-chart">
+              <svg id="curveSvg" viewBox="0 0 320 160" preserveAspectRatio="none" aria-hidden="true"></svg>
+              <div class="chart-cap">累计净收益（万元）· Y0 → Y3</div>
+            </div>
+            <button class="ov-reset" id="ovReset" type="button">↺ 重新推演</button>
+          </div>
+          <div class="disclaimer"><b>ⓘ</b><span>衍界基于公开行业数据推演，输出是决策参考而非精准预测，不替代专业咨询。</span></div>
+        </section>
+        <aside class="app-side">
+          <div class="panel">
+            <div class="panel-head"><h4>四 Agent 状态</h4><span class="stage">并行</span></div>
+            <div class="panel-body" id="wsAgents"></div>
+          </div>
+          <div class="panel">
+            <div class="panel-head"><h4>你的操作台</h4></div>
+            <div class="panel-body">
+              <div class="control-label">① 年度策略指令</div>
+              <div class="seg" id="wsSeg"><button>激进扩张</button><button class="on">稳扎稳打</button><button>保守求存</button></div>
+              <div class="control-label control-label--mt">② 预测下一年（玩中学）</div>
+              <div class="predict">✎ 猜一猜：第三年最可能发生什么？点击输入…</div>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== Features ===== -->
+<section class="block" id="features">
+  <div class="container">
+    <div class="block-head reveal">
+      <div class="eyebrow">核心能力</div>
+      <h2>它不替你做决定，它让你看得更全</h2>
+      <p>四个 Agent 各有立场，互相抬杠；你只看博弈结果，并在关键处按下决策。</p>
+    </div>
+    <div class="bento">
+      <article class="cell cell-a" data-spot>
+        <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3h5v5"/><path d="M4 20 21 3"/><path d="M21 16v5h-5"/><path d="m15 15 6 6"/><path d="M4 4l5 5"/></svg></div>
+        <h4>四 Agent 博弈</h4>
+        <p>市场、环境、个人、风险各执立场并行推演，不替你下结论，只把分歧摆上桌面。下方是真实推演流的一隅。</p>
+        <div class="mini-debate">
+          <div class="line"><span class="who" id="mdWho">市场</span><span class="say" id="mdSay"></span></div>
+        </div>
+      </article>
+      <article class="cell" data-spot>
+        <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></div>
+        <h4>因果链可视</h4>
+        <p>每个结果都标注"为什么"，逐项可追。</p>
+        <div class="chipflow"><span class="chip">竞争 +0.22</span><span class="arr">→</span><span class="chip">客流 −18%</span><span class="arr">→</span><span class="chip">现金垫 4.2月</span></div>
+      </article>
+      <article class="cell" data-spot>
+        <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg></div>
+        <h4>关键节点你拍板</h4>
+        <p>阈值触发时由你决策，改写走向。</p>
+        <div class="mini-opts"><span class="mo hot">A 投入</span><span class="mo">B 降本</span><span class="mo">C 止损</span></div>
+      </article>
+      <article class="cell cell-d" data-spot>
+        <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="3" x2="6" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg></div>
+        <h4>反事实对比</h4>
+        <p>同一决定换套策略会怎样？实线是你选的，虚线是没选的，优劣自己看。</p>
+        <svg class="mini-spark" viewBox="0 0 260 56" preserveAspectRatio="none" aria-hidden="true">
+          <path d="M4 44 C 60 40, 100 26, 150 18 S 240 8, 256 6" fill="none" stroke="var(--primary)" stroke-width="2" stroke-linecap="round"/>
+          <path d="M4 44 C 60 46, 110 44, 160 40 S 240 34, 256 32" fill="none" stroke="var(--text-muted)" stroke-width="1.6" stroke-dasharray="4 4" stroke-linecap="round"/>
+        </svg>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ===== Architecture ===== -->
+<section class="block" id="architecture">
+  <div class="container">
+    <div class="block-head reveal">
+      <div class="eyebrow">底层架构</div>
+      <h2>一套会"吵架"的决策引擎</h2>
+      <p>外层管时间线推进，内层让四个 Agent 自主博弈，三层记忆让推演越用越懂你。</p>
+    </div>
+    <div class="arch-grid">
+      <article class="agent-card reveal" style="--c: var(--agent-market)"><div class="nm">市场 Agent</div><div class="role">MARKET</div><p>盯着行业格局、竞品与价格，专挑乐观假设里的漏洞。</p></article>
+      <article class="agent-card reveal" data-d="2" style="--c: var(--agent-env)"><div class="nm">环境 Agent</div><div class="role">ENVIRONMENT</div><p>跟踪政策、利率、消费趋势，把宏观变量折算成你的损益。</p></article>
+      <article class="agent-card reveal" data-d="3" style="--c: var(--agent-personal)"><div class="nm">个人 Agent</div><div class="role">PERSONAL</div><p>记住你的偏好与指令，确保推演不偏离"你想成为的人"。</p></article>
+      <article class="agent-card reveal" data-d="4" style="--c: var(--agent-risk)"><div class="nm">风险 Agent</div><div class="role">RISK</div><p>专职唱反调，盯安全垫与尾部风险，到点就喊停让你决策。</p></article>
+    </div>
+    <div class="flow reveal">
+      <span class="node">外层状态机</span><span class="arr">→</span>
+      <span class="node">内层决策机</span><span class="arr">→</span>
+      <span class="node">四 Agent 并行</span><span class="arr">→</span>
+      <span class="node">关键节点 HITL</span><span class="arr">→</span>
+      <span class="node">三层记忆沉淀</span>
+    </div>
+  </div>
+</section>
+
+<!-- ===== Workflow ===== -->
+<section class="block" id="workflow">
+  <div class="container">
+    <div class="block-head reveal">
+      <div class="eyebrow">怎么用</div>
+      <h2>八步，从纠结到可解释的结论</h2>
+    </div>
+    <div class="steps">
+      <div class="step reveal"><div class="n">01</div><h4>选场景</h4><p>挑一个当下让你拿不定主意的决定。</p></div>
+      <div class="step reveal" data-d="2"><div class="n">02</div><h4>填参数</h4><p>城市、预算、周期，给推演一个起点。</p></div>
+      <div class="step reveal" data-d="3"><div class="n">03</div><h4>定策略</h4><p>选激进 / 稳健 / 保守，作为个人 Agent 的锚。</p></div>
+      <div class="step reveal" data-d="4"><div class="n">04</div><h4>跑推演</h4><p>四 Agent 自主博弈，时间线逐年展开。</p></div>
+      <div class="step reveal"><div class="n">05</div><h4>看分歧</h4><p>乐观与悲观假设同屏，差距一眼可见。</p></div>
+      <div class="step reveal" data-d="2"><div class="n">06</div><h4>拍关键板</h4><p>阈值触发时由你决策，改写走向。</p></div>
+      <div class="step reveal" data-d="3"><div class="n">07</div><h4>拉对照</h4><p>换策略跑反事实，比较不同路径。</p></div>
+      <div class="step reveal" data-d="4"><div class="n">08</div><h4>存日记</h4><p>结论与心路入库，日后回看当时怎么想。</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== Stats ===== -->
+<section class="block" id="stats">
+  <div class="container">
+    <div class="stats-grid reveal">
+      <div class="stat"><div class="big"><span class="cv" data-count="4">0</span></div><div class="lbl">立场 Agent 并行博弈</div></div>
+      <div class="stat"><div class="big"><span class="cv" data-count="8">0</span></div><div class="lbl">环节决策闭环</div></div>
+      <div class="stat"><div class="big"><span class="cv" data-count="100">0</span><span class="stat-pct">%</span></div><div class="lbl">推演路径可解释</div></div>
+      <div class="stat"><div class="big"><span class="cv" data-count="0">0</span></div><div class="lbl">黑盒答案 · 全程透明</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== Compare ===== -->
+<section class="block" id="compare">
+  <div class="container">
+    <div class="block-head reveal">
+      <div class="eyebrow">不一样在哪</div>
+      <h2>和测算器、找人聊，差别在哪</h2>
+    </div>
+    <div class="compare">
+      <div class="compare-col reveal"><h4>衍界</h4><ul>
+        <li><span class="mk y">✓</span> 多立场博弈，看见分歧</li>
+        <li><span class="mk y">✓</span> 关键节点你拍板</li>
+        <li><span class="mk y">✓</span> 因果链全程可追溯</li>
+        <li><span class="mk n">✕</span> 不替你做最终决定</li>
+      </ul></div>
+      <div class="compare-col reveal" data-d="2"><h4>网上测算器</h4><ul>
+        <li><span class="mk n">✕</span> 单维度，给一个数</li>
+        <li><span class="mk n">✕</span> 黑盒公式不可追</li>
+        <li><span class="mk neutral">~</span> 免费但无上下文</li>
+        <li><span class="mk n">✕</span> 不结合你的偏好</li>
+      </ul></div>
+      <div class="compare-col reveal" data-d="3"><h4>找人咨询</h4><ul>
+        <li><span class="mk y">✓</span> 有温度、能共情</li>
+        <li><span class="mk neutral">~</span> 贵、难复盘</li>
+        <li><span class="mk n">✕</span> 顾问也有立场偏差</li>
+        <li><span class="mk y">✓</span> 不可替代，建议并行</li>
+      </ul></div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== Pricing ===== -->
+<section class="block" id="pricing">
+  <div class="container">
+    <div class="block-head reveal">
+      <div class="eyebrow">怎么收费</div>
+      <h2>基础推演，长期免费</h2>
+      <p>先用免费的把思路跑通，需要更深的反事实与存档再升级。</p>
+    </div>
+    <div class="price-grid">
+      <div class="price reveal"><div class="tier">免费</div><div class="amt">¥0</div><div class="desc">日常决策够用</div><ul>
+        <li>每月 5 次推演</li><li>4 Agent 博弈视图</li><li>关键节点决策</li><li>决策日记（30 天）</li>
+      </ul><a href="#workspace" class="btn btn-ghost">开始使用</a></div>
+      <div class="price featured reveal" data-d="2"><div class="tier">标准</div><div class="amt">¥29<small> / 月</small></div><div class="desc">认真做决定的人</div><ul>
+        <li>无限推演</li><li>反事实对照路径</li><li>决策日记永久存档</li><li>导出推演报告</li>
+      </ul><a href="#workspace" class="btn btn-primary">升级标准版</a></div>
+      <div class="price reveal" data-d="3"><div class="tier">专业</div><div class="amt">¥99<small> / 月</small></div><div class="desc">高频复杂决策</div><ul>
+        <li>标准版全部能力</li><li>自定义场景与参数</li><li>私有记忆库</li><li>优先算力</li>
+      </ul><a href="#workspace" class="btn btn-ghost">升级专业版</a></div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== Insights ===== -->
+<section class="block" id="insights">
+  <div class="container">
+    <div class="block-head reveal">
+      <div class="eyebrow">推演笔记</div>
+      <h2>把"想清楚"这件事，写成方法</h2>
+    </div>
+    <div class="grid-4">
+      <a class="insight reveal" href="#"><div class="tag">方法论</div><h4>为什么重大决策要"先推演后下注"</h4><p>直觉在不确定性面前最贵，结构化的分歧比笃定更可靠。</p><div class="read">8 分钟阅读</div></a>
+      <a class="insight reveal" data-d="2" href="#"><div class="tag">反事实</div><h4>如果当时没跳槽：一条被忽略的路径</h4><p>用反事实对照，看清"没选的选项"到底值不值得后悔。</p><div class="read">6 分钟阅读</div></a>
+      <a class="insight reveal" data-d="3" href="#"><div class="tag">案例</div><h4>奶茶店 Y2 现金流告急，三种出路</h4><p>继续投入、降本、止损，三条曲线背后的真实账。</p><div class="read">10 分钟阅读</div></a>
+      <a class="insight reveal" data-d="4" href="#"><div class="tag">硬知识</div><h4>安全垫、回撤、胜率：三个该懂的词</h4><p>推演里反复出现的指标，先搞懂再看曲线。</p><div class="read">5 分钟阅读</div></a>
+    </div>
+  </div>
+</section>
+
+<!-- ===== FAQ ===== -->
+<section class="block" id="faq">
+  <div class="container">
+    <div class="block-head reveal">
+      <div class="eyebrow">问答</div>
+      <h2>几个直说的问题</h2>
+    </div>
+    <div class="reveal">
+      <details class="faq-item" open><summary>衍界能替我决定吗？<span class="pm">+</span></summary><div class="ans">不能，也不该。它把市场、环境、你的偏好和风险拆开博弈，把分歧和因果摆清楚，最终拍板的人是你。我们说"坐在驾驶位"，不是"自动驾驶"。</div></details>
+      <details class="faq-item"><summary>推演结果准吗？<span class="pm">+</span></summary><div class="ans">它基于公开行业数据与你的参数做情景推演，是决策参考而非精准预测。Y3 的净值曲线是"如果这样走"的可能路径，不是承诺。</div></details>
+      <details class="faq-item"><summary>我的数据会被拿去训练吗？<span class="pm">+</span></summary><div class="ans">你的决策日记与偏好存在私有记忆库，用于让推演更懂你，默认不共享、不用于训练公开模型。专业版可完全私有化部署。</div></details>
+      <details class="faq-item"><summary>和找咨询师冲突吗？<span class="pm">+</span></summary><div class="ans">不冲突，建议并行。衍界负责把结构、分歧和数据摊开，真人负责共情与经验判断——它替代不了后者。</div></details>
+    </div>
+  </div>
+</section>
+
+<!-- ===== CTA ===== -->
+<section class="block">
+  <div class="container">
+    <div class="cta-box reveal">
+      <h2>下一个重大决定，先来这推演一遍</h2>
+      <p>免费开始，不用填表，选个场景就能跑。</p>
+      <a href="#workspace" class="btn btn-primary">进入工作台</a>
+    </div>
+  </div>
+</section>
+
+<!-- ===== Footer ===== -->
+<footer>
+  <div class="container">
+    <div class="foot-grid">
+      <div>
+        <div class="brand foot-brand">衍界<span class="en">YANJIE</span></div>
+        <p>把重大决定先推演一遍。多立场博弈、因果可追溯、关键节点你拍板。</p>
+      </div>
+      <div><h5>产品</h5><a href="#workspace">工作台</a><a href="#features">核心能力</a><a href="#pricing">价格</a><a href="#insights">推演笔记</a></div>
+      <div><h5>资源</h5><a href="#architecture">技术架构</a><a href="#faq">常见问题</a><a href="#">更新日志</a><a href="#">状态</a></div>
+      <div><h5>关于</h5><a href="#">团队</a><a href="#">隐私</a><a href="#">条款</a><a href="#">联系</a></div>
+    </div>
+    <div class="foot-bottom">
+      <span>© 2026 衍界 YanJie AI · 决策推演工作台</span>
+      <span>基础推演长期免费 · 不卖课 · 不荐股</span>
+    </div>
+  </div>
+</footer>
+
+<!-- ===== Command Palette ===== -->
+<div class="palette-mask" id="palMask" role="dialog" aria-modal="true" aria-label="快速跳转">
+  <div class="palette">
+    <div class="palette-input">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+      <input id="palInput" type="text" placeholder="跳转区块、载入场景、切换主题…" aria-label="快速跳转指令" autocomplete="off" />
+    </div>
+    <div class="palette-list" id="palList"></div>
+    <div class="palette-foot"><span>↑↓ 选择</span><span>Enter 执行</span><span>Esc 关闭</span></div>
+  </div>
+</div>
+
+<script>
+  const root = document.documentElement;
+  const REDUCE = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // ===== Theme =====
+  (function () {
+    const saved = localStorage.getItem('yj-theme');
+    if (saved) root.dataset.theme = saved;
+    const btn = document.getElementById('themeToggle');
+    if (btn) btn.addEventListener('click', () => {
+      const next = root.dataset.theme === 'dark' ? 'light' : 'dark';
+      root.dataset.theme = next;
+      localStorage.setItem('yj-theme', next);
+    });
+  })();
+
+  // ===== Starfield：星辰大海动态宇宙引擎 =====
+  (function () {
+    // Galaxy 已接管全页背景时跳过 2D 星空
+    if (document.getElementById('galaxy')) return;
+    const cv = document.getElementById('sky');
+    if (!cv) return;
+    const ctx = cv.getContext('2d');
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    let W = 0, H = 0;
+    let stars = [], meteors = [], sparks = [], motes = [];
+    let galaxyCv = null, nebulae = [], glowSp = null, flareSp = null;
+    const mouse = { x: -9999, y: -9999 };
+    let lastNormal = 0, lastShower = 0;
+    const t0 = performance.now();
+    const rand = (a, b) => a + Math.random() * (b - a);
+
+    const TINTS = [ // 恒星色温 + 权重（蓝白最多，红最少）
+      ['#cfe3ff', .28], ['#ffffff', .26], ['#ffe9cf', .20],
+      ['#fff3c4', .12], ['#ffd9c2', .08], ['#ffc9b0', .06]
+    ];
+    function pickTint() {
+      let r = Math.random(), acc = 0;
+      for (const [c, w] of TINTS) { acc += w; if (r <= acc) return c; }
+      return '#ffffff';
+    }
+
+    function makeSprite(size, painter) {
+      const c = document.createElement('canvas');
+      c.width = c.height = size * dpr;
+      const x = c.getContext('2d');
+      x.setTransform(dpr, 0, 0, dpr, 0, 0);
+      painter(x, size);
+      return c;
+    }
+    function buildSprites() {
+      glowSp = makeSprite(64, (x, s) => {
+        const g = x.createRadialGradient(s/2, s/2, 0, s/2, s/2, s/2);
+        g.addColorStop(0, 'rgba(255,255,255,1)');
+        g.addColorStop(.25, 'rgba(255,255,255,.45)');
+        g.addColorStop(1, 'rgba(255,255,255,0)');
+        x.fillStyle = g; x.fillRect(0, 0, s, s);
+      });
+      flareSp = makeSprite(96, (x, s) => { // 亮星十字衍射芒
+        const cx = s/2;
+        const g = x.createLinearGradient(0, cx, s, cx);
+        g.addColorStop(0, 'rgba(255,255,255,0)');
+        g.addColorStop(.5, 'rgba(255,255,255,.9)');
+        g.addColorStop(1, 'rgba(255,255,255,0)');
+        x.strokeStyle = g; x.lineWidth = 1.1;
+        x.beginPath(); x.moveTo(3, cx); x.lineTo(s-3, cx);
+        x.moveTo(cx, 3); x.lineTo(cx, s-3); x.stroke();
+      });
+    }
+    function buildGalaxy() { // 银河带：暖核 + 冷缘 + 尘埃颗粒 + 中央暗尘埃带
+      galaxyCv = makeSprite(1200, (x, s) => {
+        x.save(); x.translate(s/2, s/2); x.rotate(-0.42);
+        const bw = s * 1.6, bh = s * 0.34;
+        const g = x.createLinearGradient(0, -bh/2, 0, bh/2);
+        g.addColorStop(0, 'rgba(140,170,255,0)');
+        g.addColorStop(.32, 'rgba(150,180,255,.10)');
+        g.addColorStop(.5, 'rgba(232,222,255,.16)');
+        g.addColorStop(.68, 'rgba(150,180,255,.10)');
+        g.addColorStop(1, 'rgba(140,170,255,0)');
+        x.fillStyle = g; x.fillRect(-bw/2, -bh/2, bw, bh);
+        for (let i = 0; i < 900; i++) {
+          const px = rand(-bw/2, bw/2);
+          const py = (Math.random()+Math.random()+Math.random()-1.5)/1.5 * bh * .5;
+          const a = rand(.02, .10) * (1 - Math.abs(py)/(bh*.55));
+          x.fillStyle = Math.random() < .45 ? `rgba(255,230,200,${a})` : `rgba(190,210,255,${a})`;
+          x.beginPath(); x.arc(px, py, rand(.5, 1.8), 0, 6.2832); x.fill();
+        }
+        const dg = x.createLinearGradient(0, -bh*.16, 0, bh*.16);
+        dg.addColorStop(0, 'rgba(6,9,18,0)');
+        dg.addColorStop(.5, 'rgba(6,9,18,.5)');
+        dg.addColorStop(1, 'rgba(6,9,18,0)');
+        x.fillStyle = dg; x.fillRect(-bw/2, -bh*.16, bw, bh*.32);
+        x.restore();
+      });
+    }
+    function buildNebulae() { // 三团星云，呼吸明暗
+      const blob = (rgb) => makeSprite(420, (x, s) => {
+        const g = x.createRadialGradient(s/2, s/2, 0, s/2, s/2, s/2);
+        g.addColorStop(0, `rgba(${rgb},.9)`);
+        g.addColorStop(.5, `rgba(${rgb},.25)`);
+        g.addColorStop(1, `rgba(${rgb},0)`);
+        x.fillStyle = g; x.fillRect(0, 0, s, s);
+      });
+      nebulae = [
+        { sp: blob('90,120,255'),  x: .18, y: .30, sc: 1.6, a: .10, sp2: .00008, ph: 0 },
+        { sp: blob('60,190,220'),  x: .78, y: .62, sc: 1.4, a: .08, sp2: .00011, ph: 2 },
+        { sp: blob('170,110,255'), x: .55, y: .15, sc: 1.1, a: .07, sp2: .00009, ph: 4 }
+      ];
+    }
+    function initStars() { // 三层视差 + 星等幂律 + 色温
+      stars = [];
+      const n = Math.min(440, Math.round(W * H / 2600));
+      for (let i = 0; i < n; i++) {
+        const z = [0.35, 0.65, 1][i % 3];
+        const mag = Math.pow(Math.random(), 2.6);
+        stars.push({
+          x: Math.random() * W, y: Math.random() * H, z,
+          r: (0.4 + mag * 1.7) * z,
+          base: (0.22 + mag * 0.78) * (0.5 + z * 0.5),
+          tint: pickTint(),
+          tw1: rand(0, 6.28), tws1: rand(.5, 1.4) * .02,
+          tw2: rand(0, 6.28), tws2: rand(.2, .7) * .02,
+          env: rand(0, 6.28), envs: rand(.05, .15) * .02,
+          vx: rand(-.014, .014) * z, vy: rand(-.008, .008) * z,
+          flare: mag > 0.86 && z > 0.6, spike: 0, lit: 0, litTint: '#ffffff'
+        });
+      }
+      motes = [];
+      for (let i = 0; i < 42; i++) motes.push({ x: Math.random()*W, y: Math.random()*H, r: rand(.5, 1.4), vy: rand(-.06, -.02), vx: rand(-.01, .01), a: rand(.04, .10) });
+    }
+    function spawnMeteor(tier) {
+      tier = tier || (Math.random() < .42 ? 'normal' : (Math.random() < .82 ? 'bright' : 'fire'));
+      const dir = Math.random() < .5 ? 1 : -1;
+      const ang = rand(.35, .62);
+      const speed = tier === 'fire' ? rand(7, 9.5) : tier === 'bright' ? rand(6, 8) : rand(4.5, 6.5);
+      meteors.push({
+        tier,
+        x: dir === 1 ? rand(-W*.1, W*.8) : rand(W*.2, W*1.1),
+        y: rand(-40, H*.32),
+        vx: Math.cos(ang) * speed * dir, vy: Math.sin(ang) * speed,
+        len: tier === 'fire' ? rand(190, 260) : tier === 'bright' ? rand(140, 200) : rand(90, 140),
+        w: tier === 'fire' ? 3 : tier === 'bright' ? 2.2 : 1.4,
+        tint: tier === 'fire' ? '#ffd9b0' : tier === 'bright' ? '#ffffff' : '#cfe0ff',
+        glow: tier === 'fire' ? 46 : tier === 'bright' ? 30 : 18,
+        sparkAcc: 0
+      });
+    }
+    function spawnSparks(m) {
+      for (let i = 0; i < 2; i++) sparks.push({
+        x: m.x, y: m.y,
+        vx: m.vx * rand(-.06, .06) + rand(-1.2, 1.2),
+        vy: m.vy * rand(-.06, .06) + rand(-1.2, .6),
+        life: 1, decay: rand(.012, .03), r: rand(.6, 1.6),
+        tint: Math.random() < .5 ? '#ffc9a0' : '#ffe9c9'
+      });
+    }
+    function lightStars(m) { // 流星照亮沿途星点
+      const R = m.tier === 'fire' ? 150 : m.tier === 'bright' ? 115 : 88;
+      const R2 = R * R;
+      for (const s of stars) {
+        const dx = s.x - m.x, dy = s.y - m.y, d2 = dx*dx + dy*dy;
+        if (d2 < R2) {
+          const k = 1 - d2 / R2;
+          if (k * .9 > s.lit) { s.lit = Math.min(1, k * .9); s.litTint = m.tint; }
+        }
+      }
+    }
+    function frame(now) {
+      ctx.clearRect(0, 0, W, H);
+      const t = now - t0;
+      // 银河带（缓慢漂移）
+      ctx.save();
+      ctx.globalAlpha = .85;
+      ctx.translate(W/2, H/2);
+      ctx.rotate(-.30 + Math.sin(t * .00003) * .02);
+      const gs = Math.max(W, H) * 1.5;
+      ctx.drawImage(galaxyCv, -gs/2, -gs/2, gs, gs);
+      ctx.restore();
+      // 星云呼吸 + 星尘漂浮
+      ctx.save(); ctx.globalCompositeOperation = 'lighter';
+      for (const nb of nebulae) {
+        ctx.globalAlpha = nb.a * (.75 + .25 * Math.sin(t * nb.sp2 * 1000 + nb.ph));
+        const s = nb.sp.width / dpr * nb.sc;
+        ctx.drawImage(nb.sp, nb.x * W - s/2, nb.y * H - s/2, s, s);
+      }
+      for (const mo of motes) {
+        mo.x += mo.vx; mo.y += mo.vy;
+        if (mo.y < -4) { mo.y = H + 4; mo.x = Math.random() * W; }
+        ctx.globalAlpha = mo.a;
+        ctx.fillStyle = '#bcd2ff';
+        ctx.beginPath(); ctx.arc(mo.x, mo.y, mo.r, 0, 6.2832); ctx.fill();
+      }
+      ctx.restore();
+      // 繁星
+      for (const s of stars) {
+        if (!REDUCE) {
+          s.tw1 += s.tws1; s.tw2 += s.tws2; s.env += s.envs;
+          s.x += s.vx; s.y += s.vy;
+          if (s.x < -4) s.x = W + 4; else if (s.x > W + 4) s.x = -4;
+          if (s.y < -4) s.y = H + 4; else if (s.y > H + 4) s.y = -4;
+          if (s.flare && Math.random() < .0011) s.spike = 1;
+        }
+        const flick = Math.sin(s.tw1) * .6 + Math.sin(s.tw2) * .4;
+        const tw = 1 + flick * .28 * (.72 + .28 * Math.sin(s.env));
+        if (s.spike > 0) s.spike *= .95;
+        let hover = 0;
+        const hdx = s.x - mouse.x, hdy = s.y - mouse.y, hd2 = hdx*hdx + hdy*hdy;
+        if (hd2 < 12100) hover = 1 - Math.sqrt(hd2) / 110;
+        const a = Math.min(1, s.base * tw + s.spike * .7 + s.lit * .55 + hover * .35);
+        s.lit *= .93;
+        ctx.globalAlpha = a;
+        ctx.fillStyle = s.tint;
+        ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, 6.2832); ctx.fill();
+        if (s.base > .62 || s.lit > .15 || s.spike > .05) {
+          const gsz = s.r * (10 + s.spike * 14 + s.lit * 8);
+          ctx.globalAlpha = Math.min(.5, a * .35);
+          ctx.globalCompositeOperation = 'lighter';
+          ctx.drawImage(glowSp, s.x - gsz/2, s.y - gsz/2, gsz, gsz);
+          ctx.globalCompositeOperation = 'source-over';
+        }
+        if (s.flare) {
+          const fs = s.r * (16 + s.spike * 26);
+          ctx.globalAlpha = Math.min(.85, a * (.4 + s.spike * .6));
+          ctx.globalCompositeOperation = 'lighter';
+          ctx.drawImage(flareSp, s.x - fs/2, s.y - fs/2, fs, fs);
+          ctx.globalCompositeOperation = 'source-over';
+        }
+      }
+      // 流星
+      const light = document.documentElement.getAttribute('data-theme') === 'light';
+      ctx.globalCompositeOperation = light ? 'source-over' : 'lighter';
+      for (let i = meteors.length - 1; i >= 0; i--) {
+        const m = meteors[i];
+        m.x += m.vx; m.y += m.vy;
+        lightStars(m);
+        if (m.tier === 'fire') { m.sparkAcc++; if (m.sparkAcc % 2 === 0) spawnSparks(m); }
+        const mag = Math.hypot(m.vx, m.vy);
+        const tx = m.x - m.vx / mag * m.len, ty = m.y - m.vy / mag * m.len;
+        const strokeTint = light ? 'rgba(79,140,255,.85)' : m.tint;
+        const g = ctx.createLinearGradient(m.x, m.y, tx, ty);
+        g.addColorStop(0, strokeTint);
+        g.addColorStop(1, 'rgba(255,255,255,0)');
+        ctx.globalAlpha = light ? .7 : 1;
+        ctx.strokeStyle = g; ctx.lineWidth = m.w; ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(m.x, m.y); ctx.lineTo(tx, ty); ctx.stroke();
+        const headTint = light ? 'rgba(79,140,255,.5)' : (m.tier === 'fire' ? '#fff2e0' : '#ffffff');
+        if (!light) { ctx.globalAlpha = .95; ctx.drawImage(glowSp, m.x - m.glow/2, m.y - m.glow/2, m.glow, m.glow); }
+        ctx.globalAlpha = light ? .8 : 1;
+        ctx.fillStyle = headTint;
+        ctx.beginPath(); ctx.arc(m.x, m.y, m.w * (light ? 1.4 : 1.6), 0, 6.2832); ctx.fill();
+        if (m.x < -260 || m.x > W + 260 || m.y > H + 260) meteors.splice(i, 1);
+      }
+      // 火花
+      for (let i = sparks.length - 1; i >= 0; i--) {
+        const sp = sparks[i];
+        sp.x += sp.vx; sp.y += sp.vy; sp.vy += .05; sp.life -= sp.decay;
+        if (sp.life <= 0) { sparks.splice(i, 1); continue; }
+        ctx.globalAlpha = sp.life * .9;
+        ctx.fillStyle = sp.tint;
+        ctx.beginPath(); ctx.arc(sp.x, sp.y, sp.r * sp.life, 0, 6.2832); ctx.fill();
+      }
+      ctx.globalCompositeOperation = 'source-over';
+      ctx.globalAlpha = 1;
+      // 调度：常驻流星 + 周期性流星雨
+      if (now - lastNormal > rand(320, 850)) { spawnMeteor(); lastNormal = now; }
+      if (now - lastShower > rand(26000, 46000)) {
+        const n = 10 + (Math.random() * 9 | 0);
+        for (let i = 0; i < n; i++) setTimeout(() => spawnMeteor(Math.random() < .6 ? 'normal' : 'bright'), i * rand(90, 240));
+        lastShower = now;
+      }
+      if (!REDUCE) requestAnimationFrame(frame);
+    }
+    function resize() {
+      W = cv.clientWidth; H = cv.clientHeight;
+      cv.width = W * dpr; cv.height = H * dpr;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      buildGalaxy(); initStars();
+    }
+    document.addEventListener('mousemove', e => {
+      const r = cv.getBoundingClientRect();
+      mouse.x = e.clientX - r.left; mouse.y = e.clientY - r.top;
+    });
+    document.addEventListener('mouseleave', () => { mouse.x = -9999; mouse.y = -9999; });
+    buildSprites(); buildNebulae(); resize();
+    if (REDUCE) frame(t0); // 静态星空，无流星
+    else { spawnMeteor('bright'); requestAnimationFrame(frame); }
+    window.addEventListener('resize', resize);
+  })();
+
+  // ===== Nav =====
+  (function () {
+    const toggle = document.getElementById('navToggle');
+    const links = document.getElementById('gooeyNav') || document.getElementById('navLinks');
+    if (toggle && links) {
+      toggle.addEventListener('click', () => links.classList.toggle('open'));
+      links.querySelectorAll('a').forEach(a => a.addEventListener('click', () => links.classList.remove('open')));
+    }
+  })();
+
+  // ===== Reveal =====
+  (function () {
+    const groups = ['.bento', '.grid-4', '.grid-3', '.compare', '.price-grid', '.steps', '.stats-grid', '.arch-grid', '.flow'];
+    groups.forEach(sel => {
+      const g = document.querySelector(sel); if (!g) return;
+      [...g.children].forEach((c, i) => { c.classList.add('reveal'); c.setAttribute('data-d', (i % 6) + 1); });
+    });
+    document.querySelectorAll('.block-head, .cta-box, .ws-wrap, .hero-shot').forEach(el => el.classList.add('reveal'));
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } });
+    }, { threshold: 0.1, rootMargin: '0px 0px -8% 0px' });
+    document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+  })();
+
+  // ===== Count up =====
+  (function () {
+    const stats = document.querySelector('.stats-grid'); if (!stats) return;
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach(e => {
+        if (!e.isIntersecting) return;
+        stats.querySelectorAll('.cv[data-count]').forEach(big => {
+          const target = +big.dataset.count; if (REDUCE) { big.textContent = target; return; }
+          const dur = 1300, t0 = performance.now();
+          (function step(t) { const p = Math.min(1, (t - t0) / dur); big.textContent = Math.round((1 - Math.pow(1 - p, 3)) * target); if (p < 1) requestAnimationFrame(step); })(t0);
+        });
+        io.disconnect();
+      });
+    }, { threshold: 0.4 });
+    io.observe(stats);
+  })();
+
+  // ===== Workspace interactivity =====
+  (function () {
+    const SCENARIOS = {
+      milktea: {
+        title: '奶茶店创业 · 第 2 年推演中', meta: '预算 20万 · 杭州',
+        agents: [
+          { c: 'market', nm: '市场', st: '对抗中', color: 'var(--agent-market)', brief: '竞争加剧，建议差异化', txt: '同街新开 2 家连锁加盟店，价格战触发，月客流分流约 18%。', delta: '竞争强度 +0.22' },
+          { c: 'env', nm: '环境', st: '已行动', color: 'var(--agent-env)', brief: '政策利好，成本下降', txt: '本地消费券延续，外卖抽佣下调 2pct，利好小微餐饮。', delta: '政策红利 +0.10' },
+          { c: 'personal', nm: '个人', st: '执行中', color: 'var(--agent-personal)', brief: '遵循稳扎稳打策略', txt: '按你的「稳扎稳打」指令，本年不扩店、聚焦复购与私域。', delta: '现金消耗 −12%' },
+          { c: 'risk', nm: '风险', st: '告警', color: 'var(--agent-risk)', brief: '现金流触发阈值', txt: '现金流安全垫降至 4.2 个月，触发关键事件阈值——需要你决策。', delta: '现金流告急', neg: true }
+        ],
+        q: '现金流告急：第二年该如何应对？', qd: '风险 Agent 判定当前安全垫不足 5 个月。你的选择将直接改写后续时间线走向。',
+        opts: {
+          A: { t: '继续投入', prev: '加大营销抢回客流', flag: 'warn', flagTxt: '险胜', title: '继续投入 · 险中求胜', narr: '你加大营销抢回客流。Y2 末客流回升 9%，但营销费用吞掉 6 万利润；Y3 连锁加盟店陆续撤出，门店重回盈利轨道，第 32 个月首次回本。', m: ['32 月', '2.8 月', '55%'], curve: [-20, -23, -25, -22, -12, 2, 18], hex: '#FBBF24' },
+          B: { t: '降本求存', prev: '关掉亏损单、裁兼职', flag: 'ok', flagTxt: '稳健', title: '降本求存 · 稳稳活下来', narr: '你关掉亏损单品、裁掉 2 名兼职。当月现金消耗 −38%，安全垫回升至 8.1 个月；增长放缓但稳，Y3 末累计仍亏 8 万——没回本，但店活着、本金在。', m: ['未回本', '8.1 月', '78%'], curve: [-20, -18.5, -16, -13, -10, -9, -8], hex: '#34D399' },
+          C: { t: '止损退出', prev: '转让设备、保留本金', flag: 'info', flagTxt: '止损', title: '止损退出 · 保住本金', narr: 'Y2 第 7 个月你转让设备、保留本金，净亏损 6.2 万离场，现金回笼 13.8 万。虽未盈利，但避开了 Y3 的连锁价格战——本金安全，下次再来。', m: ['已离场', '13.8 万', '90%'], curve: [-20, -20, -19, -12, -6.2, -6.2, -6.2], hex: '#22D3EE' }
+        }
+      },
+      job: {
+        title: '职场跳槽 · 第 1 年推演中', meta: '涨薪 30% · 行业下行',
+        agents: [
+          { c: 'market', nm: '市场', st: '对抗中', color: 'var(--agent-market)', brief: '原行业收缩', txt: '原行业头部裁员，岗位总量收缩 14%，留任也不轻松。', delta: '原岗风险 +0.18' },
+          { c: 'env', nm: '环境', st: '已行动', color: 'var(--agent-env)', brief: '新行业回暖', txt: '新行业融资回暖，对应岗位需求同比上升 22%。', delta: '新岗机会 +0.20' },
+          { c: 'personal', nm: '个人', st: '执行中', color: 'var(--agent-personal)', brief: '稳中求进', txt: '按你的「稳中求进」，先拿 offer 再谈落地，不裸辞。', delta: '过渡风险 −15%' },
+          { c: 'risk', nm: '风险', st: '告警', color: 'var(--agent-risk)', brief: '试用期淘汰', txt: '新岗试用期淘汰率约 12%，业绩不达标即出局。', delta: '试用期风险', neg: true }
+        ],
+        q: '跳还是留？第一年关键选择', qd: '风险 Agent 提示新岗有淘汰风险。你的选择决定未来 3 年的收入曲线形状。',
+        opts: {
+          A: { t: '跳槽', prev: '拿涨薪搏前景', flag: 'warn', flagTxt: '跃迁', title: '跳槽 · 赌对了上台阶', narr: '你跳槽，前两年涨薪覆盖适应成本，第 3 年因行业回暖晋升，累计多赚 28 万；但若试用期未过则空窗 4 月。', m: ['+28 万', '中', '62%'], curve: [0, -4, 6, 14, 22, 28, 30], hex: '#FBBF24' },
+          B: { t: '留观', prev: '边做边看机会', flag: 'ok', flagTxt: '稳健', title: '留观 · 不赌但也不亏', narr: '你留原岗、业余看机会，收入平稳，第 2 年拿到平薪 rival offer 作为筹码，累计多 6 万，无空窗风险。', m: ['+6 万', '高', '80%'], curve: [0, 2, 4, 6, 7, 8, 9], hex: '#34D399' },
+          C: { t: '拒 offer', prev: '深耕原赛道', flag: 'info', flagTxt: '保守', title: '拒 offer · 守住基本盘', narr: '你拒掉不确定，深耕原岗到第 3 年成骨干，累计多 10 万，避开了试用期与空窗，但错过行业上行红利。', m: ['+10 万', '高', '85%'], curve: [0, 3, 5, 7, 9, 10, 11], hex: '#22D3EE' }
+        }
+      },
+      house: {
+        title: '买房决策 · 第 1 年推演中', meta: '首付六钱包 · 买租',
+        agents: [
+          { c: 'market', nm: '市场', st: '对抗中', color: 'var(--agent-market)', brief: '横盘微降', txt: '所在城市房价横盘，利率微降，短期无大涨动力。', delta: '房价 Δ +0.02' },
+          { c: 'env', nm: '环境', st: '已行动', color: 'var(--agent-env)', brief: '租售比低', txt: '同地段租售比仅 1.8%，租房比买房现金流更松。', delta: '租房更灵活' },
+          { c: 'personal', nm: '个人', st: '执行中', color: 'var(--agent-personal)', brief: '重安全感', txt: '你偏好「现金流安全」，不愿月供压垮生活质量。', delta: '安全偏好' },
+          { c: 'risk', nm: '风险', st: '告警', color: 'var(--agent-risk)', brief: '月供占比高', txt: '若买入，月供占收入比达 52%，抗风险能力弱。', delta: '月供占比 52%', neg: true }
+        ],
+        q: '买还是租？', qd: '风险 Agent 提示月供占比过高。你的选择影响未来 10 年的现金流弹性。',
+        opts: {
+          A: { t: '买', prev: '掏空六个钱包上车', flag: 'warn', flagTxt: '重仓', title: '买 · 落定但有压力', narr: '你买入，月供占收入 52%，前 3 年现金流紧；若房价横盘，10 年后净值因还贷累积转正，但抗风险弱。', m: ['10 年+', '紧', '58%'], curve: [-60, -55, -48, -38, -24, -8, 10], hex: '#FBBF24' },
+          B: { t: '租', prev: '保留现金灵活', flag: 'ok', flagTxt: '灵活', title: '租 · 现金流宽松', narr: '你选择租，把首付做低风险投资，月现金流富余，10 年后资产净增 22 万且无负债，但无房产增值敞口。', m: ['+22 万', '松', '76%'], curve: [0, 4, 8, 12, 16, 19, 22], hex: '#34D399' },
+          C: { t: '观望', prev: '等利率再降', flag: 'info', flagTxt: '缓冲', title: '观望 · 暂不决策', narr: '你观望 1 年，期间利率再降 0.3pct，次年买入月供占比降到 44%，兼顾安定与现金流。', m: ['44% 占比', '中', '82%'], curve: [-60, -58, -50, -40, -26, -10, 8], hex: '#22D3EE' }
+        }
+      },
+      invest: {
+        title: '投资理财 · 配置推演中', meta: '股债金 · 波动市',
+        agents: [
+          { c: 'market', nm: '市场', st: '对抗中', color: 'var(--agent-market)', brief: '权益回撤', txt: '波动市中权益类年内回撤 18%，追涨杀跌最伤。', delta: '波动 +0.25' },
+          { c: 'env', nm: '环境', st: '已行动', color: 'var(--agent-env)', brief: '债牛', txt: '利率下行，债券走牛，提供稳定票息。', delta: '债券 +0.08' },
+          { c: 'personal', nm: '个人', st: '执行中', color: 'var(--agent-personal)', brief: '年化 6% 目标', txt: '你设定年化 6% 目标，不愿承担过大回撤。', delta: '目标锚定' },
+          { c: 'risk', nm: '风险', st: '告警', color: 'var(--agent-risk)', brief: '集中持仓', txt: '单一持仓占比超 60%，波动超限，需再平衡。', delta: '集中度过高', neg: true }
+        ],
+        q: '股债金怎么配？', qd: '风险 Agent 提示集中持仓超限。配置比例决定回撤幅度与达成目标的概率。',
+        opts: {
+          A: { t: '激进股', prev: '70% 权益', flag: 'warn', flagTxt: '高波', title: '激进股 · 高收益高回撤', narr: '你配 70% 权益，牛市年收益冲到 14%，但回撤达 28%；5 年均值 9%，适合能扛波动的人。', m: ['年化 9%', '回撤 28%', '55%'], curve: [0, 14, -10, 22, -6, 30, 38], hex: '#FBBF24' },
+          B: { t: '均衡', prev: '50/40/10', flag: 'ok', flagTxt: '均衡', title: '均衡 · 目标附近', narr: '你配 50% 股 / 40% 债 / 10% 金，年化 6.5%，回撤控制在 12%，最贴合你的目标且睡得着。', m: ['年化 6.5%', '回撤 12%', '78%'], curve: [0, 7, 1, 9, 3, 11, 13], hex: '#34D399' },
+          C: { t: '保守债', prev: '80% 债', flag: 'info', flagTxt: '稳健', title: '保守债 · 求稳', narr: '你配 80% 债，年化 3.8%，回撤仅 4%，几乎不慌，但离 6% 目标有差距，需延长周期。', m: ['年化 3.8%', '回撤 4%', '90%'], curve: [0, 4, 2, 5, 3, 6, 7], hex: '#22D3EE' }
+        }
+      },
+      side: {
+        title: '副业试水 · 路径推演中', meta: '周 10h · 轻量',
+        agents: [
+          { c: 'market', nm: '市场', st: '对抗中', color: 'var(--agent-market)', brief: '流量褪去', txt: '自媒体流量红利褪去，起号成本上升。', delta: '起号难 +0.15' },
+          { c: 'env', nm: '环境', st: '已行动', color: 'var(--agent-env)', brief: '外包稳', txt: '技能外包需求稳定，按单结算回款快。', delta: '外包需求稳' },
+          { c: 'personal', nm: '个人', st: '执行中', color: 'var(--agent-personal)', brief: '时间有限', txt: '你每周仅 10h，副业不能拖累主业产出。', delta: '时间约束' },
+          { c: 'risk', nm: '风险', st: '告警', color: 'var(--agent-risk)', brief: '主业受损', txt: '副业若占满精力，主业绩效下滑风险上升。', delta: '主业风险', neg: true }
+        ],
+        q: '选哪条副业路径？', qd: '风险 Agent 提示精力冲突。路径决定副业收益与主业安全的平衡。',
+        opts: {
+          A: { t: '自媒体', prev: '赌流量变现', flag: 'warn', flagTxt: '不确定', title: '自媒体 · 慢热博弈', narr: '你做自媒体，前 8 月几乎零收入，第 2 年若起号成功月入 4 千；失败则仅赚经验，主业持平。', m: ['月 0–4k', '慢热', '50%'], curve: [0, -1, -2, 1, 6, 14, 24], hex: '#FBBF24' },
+          B: { t: '接私单', prev: '技能变现', flag: 'ok', flagTxt: '稳收', title: '接私单 · 即时回款', narr: '你接技能私单，当月即回款，周 10h 月入稳定 2.5 千，主业不受影响，边际清晰。', m: ['月 2.5k', '稳', '82%'], curve: [0, 3, 6, 9, 12, 15, 18], hex: '#34D399' },
+          C: { t: '都试', prev: '各投 5h', flag: 'info', flagTxt: '分散', title: '都试 · 小步验证', narr: '你各投 5h 验证，3 个月后砍掉低效项聚焦其一，月入 1.8 千但试错成本最低。', m: ['月 1.8k', '低', '88%'], curve: [0, 2, 4, 6, 9, 12, 15], hex: '#22D3EE' }
+        }
+      },
+      grad: {
+        title: '考研 vs 就业 · 分野推演中', meta: '应届 · 关键岔口',
+        agents: [
+          { c: 'market', nm: '市场', st: '对抗中', color: 'var(--agent-market)', brief: '学历溢价降', txt: '硕士扩招，学历溢价下降，但门槛岗仍要学历。', delta: '溢价 −0.10' },
+          { c: 'env', nm: '环境', st: '已行动', color: 'var(--agent-env)', brief: '就业冷', txt: '当期就业市场偏冷，应届岗位竞争烈。', delta: '就业难度 +' },
+          { c: 'personal', nm: '个人', st: '执行中', color: 'var(--agent-personal)', brief: '先赚钱倾向', txt: '你偏「先赚钱」，对学术兴趣一般。', delta: '偏好锚定' },
+          { c: 'risk', nm: '风险', st: '告警', color: 'var(--agent-risk)', brief: '时间成本', txt: '考研失败 = 净亏 2 年时间成本，需兜底。', delta: '时间成本 2 年', neg: true }
+        ],
+        q: '考研还是就业？', qd: '风险 Agent 提示时间成本。路径决定未来 5 年的收入曲线形状。',
+        opts: {
+          A: { t: '考研', prev: '搏学历门槛', flag: 'warn', flagTxt: '长线', title: '考研 · 延迟变现', narr: '你考研，前 3 年零收入、净投入 12 万；第 4 年起进门槛岗，5 年累计反超就业党 15 万，但赌的是上岸。', m: ['+15 万', '晚', '60%'], curve: [-12, -16, -18, 2, 14, 26, 38], hex: '#FBBF24' },
+          B: { t: '就业', prev: '立刻赚钱', flag: 'ok', flagTxt: '即时', title: '就业 · 早现金流', narr: '你直接就业，前 3 年月薪累积 23 万；增长平缓但无空窗，5 年末总资产领先且试错成本低。', m: ['+23 万', '早', '80%'], curve: [0, 6, 12, 17, 21, 24, 27], hex: '#34D399' },
+          C: { t: '边工边考', prev: '在职备考', flag: 'info', flagTxt: '兜底', title: '边工边考 · 留后路', narr: '你先就业、业余备考，保底收入同时冲学历；上岸则切换路径，失败也不亏时间，最稳。', m: ['+20 万', '稳', '85%'], curve: [0, 6, 11, 16, 20, 24, 28], hex: '#22D3EE' }
+        }
+      }
+    };
+
+    const tl = document.getElementById('wsTimeline');
+    const titleEl = document.getElementById('wsTitle');
+    const metaEl = document.getElementById('wsMeta');
+    const qEl = document.getElementById('wsQ');
+    const qdEl = document.getElementById('wsQdesc');
+    const optsEl = document.getElementById('wsOpts');
+    const agentsEl = document.getElementById('wsAgents');
+    const railItems = document.querySelectorAll('.rail-item');
+    const outcome = document.getElementById('outcome');
+    if (!tl) return;
+
+    function renderAgents(sc) {
+      agentsEl.innerHTML = '';
+      sc.agents.forEach(a => {
+        const d = document.createElement('div');
+        d.className = 'astat'; d.style.setProperty('--c', a.color);
+        d.innerHTML = '<div class="top"><span class="name">' + a.nm + '</span><span class="st" style="color:' + a.color + '">' + a.st + '</span></div><div class="brief">' + a.brief + '</div>';
+        agentsEl.appendChild(d);
+      });
+    }
+    function fillScenario(sc) {
+      titleEl.textContent = sc.title;
+      metaEl.textContent = sc.meta;
+      qEl.textContent = sc.q;
+      qdEl.textContent = sc.qd;
+      // timeline
+      tl.innerHTML = '';
+      sc.agents.forEach((a, i) => {
+        const el = document.createElement('div');
+        el.className = 'agent-action ' + a.c;
+        el.innerHTML = '<div class="who"><span class="pin" style="background:' + a.color + '"></span>' + a.nm + ' Agent</div>' +
+          '<div class="txt">' + a.txt + '</div>' +
+          '<div class="delta' + (a.neg ? ' neg' : '') + '">' + a.delta + '</div>';
+        tl.appendChild(el);
+        if (!REDUCE) setTimeout(() => el.classList.add('show'), 120 * i + 60);
+        else el.classList.add('show');
+      });
+      // options
+      optsEl.innerHTML = '';
+      Object.keys(sc.opts).forEach(k => {
+        const o = sc.opts[k];
+        const el = document.createElement('div');
+        el.className = 'iv-opt'; el.dataset.choice = k; el.setAttribute('role', 'button'); el.tabIndex = 0;
+        el.innerHTML = '<div class="t">' + k + ' · ' + o.t + '</div><div class="prev">' + o.prev + '</div>';
+        optsEl.appendChild(el);
+      });
+      bindOpts(sc);
+      renderAgents(sc);
+    }
+    function renderScenario(key) {
+      const sc = SCENARIOS[key]; if (!sc) return;
+      outcome.classList.remove('show');
+      if (REDUCE) { fillScenario(sc); return; }
+      // 骨架屏（加载态）
+      tl.innerHTML = '';
+      for (let i = 0; i < 3; i++) { const s = document.createElement('div'); s.className = 'sk'; s.style.height = '54px'; s.style.marginBottom = '12px'; tl.appendChild(s); }
+      agentsEl.innerHTML = '';
+      for (let i = 0; i < 4; i++) { const s = document.createElement('div'); s.className = 'sk'; s.style.height = '34px'; s.style.marginBottom = '10px'; agentsEl.appendChild(s); }
+      setTimeout(() => fillScenario(sc), 320);
+    }
+    function drawCurve(vals, hex) {
+      const svg = document.getElementById('curveSvg'); if (!svg) return;
+      const pl = 24, pr = 296, top = 18, bot = 140, ymin = -60, ymax = 40;
+      const xs = vals.map((_, i) => pl + i * ((pr - pl) / (vals.length - 1)));
+      const ys = vals.map(v => bot - (v - ymin) / (ymax - ymin) * (bot - top));
+      const baseY = bot - (0 - ymin) / (ymax - ymin) * (bot - top);
+      let d = 'M' + xs[0] + ' ' + ys[0];
+      for (let i = 1; i < xs.length; i++) d += ' L' + xs[i] + ' ' + ys[i];
+      const area = d + ' L' + xs[xs.length - 1] + ' ' + baseY + ' L' + xs[0] + ' ' + baseY + ' Z';
+      svg.innerHTML =
+        '<defs><linearGradient id="ag" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="' + hex + '" stop-opacity="0.30"/><stop offset="1" stop-color="' + hex + '" stop-opacity="0"/></linearGradient></defs>' +
+        '<line class="base-line" x1="' + pl + '" y1="' + baseY + '" x2="' + pr + '" y2="' + baseY + '"/>' +
+        '<path d="' + area + '" fill="url(#ag)"/>' +
+        '<path d="' + d + '" fill="none" stroke="' + hex + '" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"/>' +
+        '<circle cx="' + xs[xs.length - 1] + '" cy="' + ys[ys.length - 1] + '" r="4" fill="' + hex + '"/>';
+    }
+    let twTimer;
+    function typeWriter(el, text) {
+      clearTimeout(twTimer); el.textContent = '';
+      if (REDUCE) { el.textContent = text; return; }
+      let i = 0; (function step() { if (i <= text.length) { el.textContent = text.slice(0, i); i++; twTimer = setTimeout(step, 16); } })();
+    }
+    function choose(sc, k) {
+      const o = sc.opts[k]; if (!o) return;
+      optsEl.querySelectorAll('.iv-opt').forEach(x => x.classList.remove('chosen'));
+      const el = optsEl.querySelector('.iv-opt[data-choice="' + k + '"]');
+      if (el) el.classList.add('chosen');
+      outcome.classList.add('show');
+      const flag = document.getElementById('ovFlag');
+      flag.className = 'ov-flag ' + o.flag; flag.textContent = o.flagTxt;
+      document.getElementById('ovTitle').textContent = o.title;
+      document.getElementById('m1').textContent = o.m[0];
+      document.getElementById('m2').textContent = o.m[1];
+      document.getElementById('m3').textContent = o.m[2];
+      drawCurve(o.curve, o.hex);
+      typeWriter(document.getElementById('ovNarr'), o.narr);
+    }
+    function bindOpts(sc) {
+      optsEl.querySelectorAll('.iv-opt').forEach(el => {
+        const k = el.dataset.choice;
+        el.onclick = () => choose(sc, k);
+        el.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); choose(sc, k); } };
+      });
+    }
+    railItems.forEach(it => it.addEventListener('click', () => {
+      railItems.forEach(x => x.classList.remove('on'));
+      it.classList.add('on');
+      renderScenario(it.dataset.sc);
+    }));
+    const reset = document.getElementById('ovReset');
+    if (reset) reset.onclick = () => { outcome.classList.remove('show'); optsEl.querySelectorAll('.iv-opt').forEach(x => x.classList.remove('chosen')); };
+    // strategy seg (cosmetic)
+    const seg = document.getElementById('wsSeg');
+    if (seg) seg.querySelectorAll('button').forEach(b => b.addEventListener('click', () => { seg.querySelectorAll('button').forEach(x => x.classList.remove('on')); b.classList.add('on'); }));
+
+    renderScenario('milktea');
+    // 暴露给首屏快照：点场景卡 → 滚到工作台并载入
+    window.yjSelect = function (key) {
+      railItems.forEach(x => x.classList.toggle('on', x.dataset.sc === key));
+      renderScenario(key);
+    };
+    window.yjJump = function (key) {
+      const ws = document.getElementById('workspace');
+      if (ws) ws.scrollIntoView({ behavior: REDUCE ? 'auto' : 'smooth' });
+      window.yjSelect(key);
+    };
+  })();
+
+  // ===== 滚动进度 & 导航状态 =====
+  (function () {
+    const bar = document.getElementById('scrollbar');
+    const nav = document.querySelector('header.nav');
+    function onScroll() {
+      const h = document.documentElement;
+      const p = h.scrollTop / (h.scrollHeight - h.clientHeight || 1);
+      if (bar) bar.style.transform = 'scaleX(' + p + ')';
+      if (nav) nav.classList.toggle('scrolled', h.scrollTop > 8);
+    }
+    window.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+  })();
+
+  // ===== Hero 标题解码 =====
+  (function () {
+    if (REDUCE) return;
+    const h1 = document.querySelector('.hero h1');
+    if (!h1) return;
+    const finalHTML = h1.innerHTML;
+    const plain = '重大决定，先推演一遍再下注';
+    const pool = '衍界星辰大海·—+*';
+    const frag = document.createDocumentFragment();
+    const spans = [];
+    [...plain].forEach((ch, i) => {
+      if (i === 5) frag.appendChild(document.createElement('br'));
+      const s = document.createElement('span');
+      s.textContent = pool[(Math.random() * pool.length) | 0];
+      s.style.opacity = '.25';
+      frag.appendChild(s); spans.push(s);
+    });
+    h1.textContent = ''; h1.appendChild(frag);
+    let revealed = 0;
+    const tick = setInterval(() => {
+      for (let i = revealed; i < spans.length; i++) {
+        if (Math.random() < .5) spans[i].textContent = pool[(Math.random() * pool.length) | 0];
+      }
+      const s = spans[revealed];
+      s.textContent = plain[revealed]; s.style.opacity = '1';
+      revealed++;
+      if (revealed >= spans.length) { clearInterval(tick); setTimeout(() => { h1.innerHTML = finalHTML; }, 120); }
+    }, 55);
+  })();
+
+  // ===== 磁吸按钮 =====
+  (function () {
+    if (REDUCE || window.matchMedia('(pointer: coarse)').matches) return;
+    document.querySelectorAll('.hero-cta .btn, .cta-box .btn').forEach(btn => {
+      btn.classList.add('magnetic');
+      btn.addEventListener('mousemove', e => {
+        const r = btn.getBoundingClientRect();
+        const x = (e.clientX - r.left - r.width / 2) / (r.width / 2);
+        const y = (e.clientY - r.top - r.height / 2) / (r.height / 2);
+        btn.style.transform = 'translate(' + (x * 5.5) + 'px,' + (y * 4.5) + 'px)';
+      });
+      btn.addEventListener('mouseleave', () => { btn.style.transform = ''; });
+    });
+  })();
+
+  // ===== 产品快照 3D 倾斜 =====
+  (function () {
+    if (REDUCE || window.matchMedia('(pointer: coarse)').matches) return;
+    const wrap = document.querySelector('.hero-shot');
+    const card = document.querySelector('.hero-shot .ws-wrap');
+    if (!wrap || !card) return;
+    card.classList.add('tilt');
+    wrap.addEventListener('mousemove', e => {
+      const r = wrap.getBoundingClientRect();
+      const x = (e.clientX - r.left) / r.width - .5;
+      const y = (e.clientY - r.top) / r.height - .5;
+      card.style.transform = 'perspective(1100px) rotateY(' + (x * 6) + 'deg) rotateX(' + (-y * 5) + 'deg)';
+    });
+    wrap.addEventListener('mouseleave', () => { card.style.transform = ''; });
+  })();
+
+  // ===== 卡片聚光 =====
+  (function () {
+    if (window.matchMedia('(pointer: coarse)').matches) return;
+    document.querySelectorAll('.compare-col, .price, .step, .insight, .agent-card').forEach(el => el.setAttribute('data-spot', ''));
+    document.addEventListener('mousemove', e => {
+      const el = e.target.closest && e.target.closest('[data-spot]');
+      if (!el) return;
+      const r = el.getBoundingClientRect();
+      el.style.setProperty('--mx', (e.clientX - r.left) + 'px');
+      el.style.setProperty('--my', (e.clientY - r.top) + 'px');
+    }, { passive: true });
+  })();
+
+  // ===== ⌘K 指令面板 =====
+  (function () {
+    const mask = document.getElementById('palMask');
+    const input = document.getElementById('palInput');
+    const list = document.getElementById('palList');
+    if (!mask || !input || !list) return;
+    const jump = sel => { const el = document.querySelector(sel); if (el) el.scrollIntoView({ behavior: REDUCE ? 'auto' : 'smooth' }); };
+    const CMDS = [
+      { t: '载入场景 · 奶茶店创业', tag: '场景', run: () => window.yjJump('milktea') },
+      { t: '载入场景 · 职场跳槽', tag: '场景', run: () => window.yjJump('job') },
+      { t: '载入场景 · 买房决策', tag: '场景', run: () => window.yjJump('house') },
+      { t: '载入场景 · 投资理财', tag: '场景', run: () => window.yjJump('invest') },
+      { t: '载入场景 · 副业试水', tag: '场景', run: () => window.yjJump('side') },
+      { t: '载入场景 · 考研 vs 就业', tag: '场景', run: () => window.yjJump('grad') },
+      { t: '产品工作台', tag: '区块', run: () => jump('#workspace') },
+      { t: '核心能力', tag: '区块', run: () => jump('#features') },
+      { t: '底层架构', tag: '区块', run: () => jump('#architecture') },
+      { t: '怎么用 · 八步', tag: '区块', run: () => jump('#workflow') },
+      { t: '怎么收费', tag: '区块', run: () => jump('#pricing') },
+      { t: '推演笔记', tag: '区块', run: () => jump('#insights') },
+      { t: '常见问题', tag: '区块', run: () => jump('#faq') },
+      { t: '切换暗色 / 亮色主题', tag: '操作', run: () => document.getElementById('themeToggle').click() }
+    ];
+    let items = [], sel = 0, open = false;
+    function render(filter) {
+      const f = (filter || '').trim().toLowerCase();
+      items = CMDS.filter(c => !f || c.t.toLowerCase().includes(f) || c.tag.toLowerCase().includes(f));
+      sel = 0;
+      if (!items.length) { list.innerHTML = '<div class="pal-empty">没有匹配的指令</div>'; return; }
+      list.innerHTML = '';
+      items.forEach((c, i) => {
+        const d = document.createElement('div');
+        d.className = 'pal-item' + (i === sel ? ' sel' : '');
+        d.innerHTML = '<span>' + c.t + '</span><span class="tag">' + c.tag + '</span>';
+        d.addEventListener('click', () => exec(i));
+        list.appendChild(d);
+      });
+    }
+    function paint() {
+      list.querySelectorAll('.pal-item').forEach((d, i) => d.classList.toggle('sel', i === sel));
+      const el = list.querySelectorAll('.pal-item')[sel];
+      if (el) el.scrollIntoView({ block: 'nearest' });
+    }
+    function exec(i) { const c = items[i]; if (!c) return; close(); c.run(); }
+    function show() { open = true; mask.classList.add('open'); input.value = ''; render(''); setTimeout(() => input.focus(), 30); }
+    function close() { open = false; mask.classList.remove('open'); }
+    document.addEventListener('keydown', e => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); open ? close() : show(); return; }
+      if (!open) return;
+      if (e.key === 'Escape') close();
+      else if (e.key === 'ArrowDown') { e.preventDefault(); sel = Math.min(items.length - 1, sel + 1); paint(); }
+      else if (e.key === 'ArrowUp') { e.preventDefault(); sel = Math.max(0, sel - 1); paint(); }
+      else if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); exec(sel); }
+    });
+    input.addEventListener('input', () => render(input.value));
+    mask.addEventListener('click', e => { if (e.target === mask) close(); });
+    const btn = document.getElementById('palOpen');
+    if (btn) btn.addEventListener('click', show);
+  })();
+
+
+  // ===== Hero video =====
+  (function () {
+    const v = document.getElementById('heroVideo');
+    const fb = document.getElementById('heroFallback');
+    if (!v) return;
+    let done = false;
+    const ok = () => {
+      if (done) return;
+      done = true;
+      document.body.classList.add('hero-video-on');
+    };
+    const fail = () => {
+      if (done) return;
+      done = true;
+      try { v.removeAttribute('src'); v.load(); } catch (e) {}
+      v.style.display = 'none';
+      if (fb) fb.hidden = false;
+      document.body.classList.remove('hero-video-on');
+    };
+    v.addEventListener('error', fail);
+    v.addEventListener('loadeddata', ok);
+    v.addEventListener('canplay', ok);
+    const p = v.play();
+    if (p && typeof p.catch === 'function') {
+      p.then(ok).catch(() => { /* keep trying muted autoplay */ });
+    }
+    setTimeout(() => { if (v.readyState < 2) fail(); }, 4000);
+  })();
+
+  // ===== Bento：实时博弈播报 =====
+  (function () {
+    const say = document.getElementById('mdSay');
+    const who = document.getElementById('mdWho');
+    if (!say || !who) return;
+    const FEED = [
+      ['市场', 'var(--agent-market)', '价格战触发，客流分流约 18%'],
+      ['环境', 'var(--agent-env)', '消费券延续，外卖抽佣下调 2pct'],
+      ['个人', 'var(--agent-personal)', '按你的指令：不扩店、聚焦复购'],
+      ['风险', 'var(--agent-risk)', '安全垫 4.2 个月，触发决策阈值'],
+      ['市场', 'var(--agent-market)', '连锁加盟店预计 Y3 陆续撤出'],
+      ['环境', 'var(--agent-env)', '差异化窗口：夜场 + 私域复购']
+    ];
+    let i = 0, timer;
+    function play() {
+      const [w, c, text] = FEED[i];
+      who.textContent = w; who.style.color = c;
+      if (REDUCE) { say.textContent = text; return; }
+      say.textContent = '';
+      let p = 0;
+      clearInterval(timer);
+      timer = setInterval(() => {
+        say.textContent = text.slice(0, ++p);
+        if (p >= text.length) { clearInterval(timer); setTimeout(() => { i = (i + 1) % FEED.length; play(); }, 2600); }
+      }, 42);
+    }
+    play();
+  })();
+</script>
+<script>
+
+  
+  // ===== VariableProximity（近距可变字重 · 纯 JS）=====
+  (function () {
+    const container = document.getElementById('heroProx');
+    const title = document.getElementById('heroTitle');
+    if (!container || !title) return;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    // 触控为主设备：跳过（无稳定 hover）
+    if (window.matchMedia('(hover: none)').matches) return;
+
+    const fromSettings = "'wght' 500";
+    const toSettings = "'wght' 900";
+    const radius = 130;
+    const falloff = 'gaussian';
+
+    const parseSettings = (str) => {
+      const map = new Map();
+      str.split(',').forEach((s) => {
+        const parts = s.trim().split(/\s+/);
+        if (parts.length >= 2) {
+          map.set(parts[0].replace(/['"]/g, ''), parseFloat(parts[1]));
+        }
+      });
+      return map;
+    };
+    const fromMap = parseSettings(fromSettings);
+    const toMap = parseSettings(toSettings);
+    const axes = Array.from(fromMap.entries()).map(([axis, fromValue]) => ({
+      axis,
+      fromValue,
+      toValue: toMap.get(axis) ?? fromValue
+    }));
+
+    // 把标题拆成逐字 span（保留 br 与高亮「推演」）
+    const raw = title.getAttribute('data-label') || title.textContent.replace(/\s+/g, '');
+    // 期望结构：重大决定， | 先推演一遍再下注
+    const line1 = '重大决定，';
+    const line2 = '先推演一遍再下注';
+    const hlSet = new Set(['推', '演']);
+
+    title.textContent = '';
+    title.setAttribute('aria-label', line1 + line2);
+    const letterEls = [];
+
+    function appendWord(str) {
+      const wrap = document.createElement('span');
+      wrap.style.display = 'inline-block';
+      wrap.style.whiteSpace = 'nowrap';
+      for (const ch of str) {
+        const span = document.createElement('span');
+        span.className = 'vp-letter' + (hlSet.has(ch) ? ' is-hl' : '');
+        span.textContent = ch;
+        span.setAttribute('aria-hidden', 'true');
+        span.style.fontVariationSettings = fromSettings;
+        wrap.appendChild(span);
+        letterEls.push(span);
+      }
+      title.appendChild(wrap);
+    }
+    appendWord(line1);
+    title.appendChild(document.createElement('br'));
+    appendWord(line2);
+    const sr = document.createElement('span');
+    sr.className = 'sr-only';
+    sr.textContent = line1 + line2;
+    title.appendChild(sr);
+
+    const mouse = { x: -9999, y: -9999 };
+    let lastX = null, lastY = null;
+
+    const onMove = (x, y) => {
+      const rect = container.getBoundingClientRect();
+      mouse.x = x - rect.left;
+      mouse.y = y - rect.top;
+    };
+    window.addEventListener('mousemove', (e) => onMove(e.clientX, e.clientY), { passive: true });
+    window.addEventListener('touchmove', (e) => {
+      if (e.touches[0]) onMove(e.touches[0].clientX, e.touches[0].clientY);
+    }, { passive: true });
+
+    const dist = (x1, y1, x2, y2) => Math.hypot(x2 - x1, y2 - y1);
+    const calcFalloff = (d) => {
+      const norm = Math.min(Math.max(1 - d / radius, 0), 1);
+      if (falloff === 'exponential') return norm ** 2;
+      if (falloff === 'gaussian') return Math.exp(-((d / (radius / 2)) ** 2) / 2);
+      return norm;
+    };
+
+    function tick() {
+      if (lastX === mouse.x && lastY === mouse.y) {
+        requestAnimationFrame(tick);
+        return;
+      }
+      lastX = mouse.x;
+      lastY = mouse.y;
+      const crect = container.getBoundingClientRect();
+      for (const el of letterEls) {
+        const r = el.getBoundingClientRect();
+        const cx = r.left + r.width / 2 - crect.left;
+        const cy = r.top + r.height / 2 - crect.top;
+        const d = dist(mouse.x, mouse.y, cx, cy);
+        if (d >= radius) {
+          el.style.fontVariationSettings = fromSettings;
+          continue;
+        }
+        const f = calcFalloff(d);
+        el.style.fontVariationSettings = axes
+          .map(({ axis, fromValue, toValue }) => `'${axis}' ${fromValue + (toValue - fromValue) * f}`)
+          .join(', ');
+      }
+      requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+  })();
+
+  // ===== GooeyNav（黏腻流体导航 · 纯 JS 移植）=====
+  (function () {
+    const container = document.getElementById('gooeyNav');
+    if (!container) return;
+    const navRef = container.querySelector('ul');
+    const filterRef = container.querySelector('.effect.filter');
+    const textRef = container.querySelector('.effect.text');
+    if (!navRef || !filterRef || !textRef) return;
+
+    const REDUCE = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const animationTime = 600;
+    const particleCount = REDUCE ? 0 : 14;
+    const particleDistances = [90, 10];
+    const particleR = 100;
+    const timeVariance = 300;
+    const colors = [1, 2, 3, 1, 2, 3, 1, 4];
+    let activeIndex = 0;
+
+    const noise = (n = 1) => n / 2 - Math.random() * n;
+    const getXY = (distance, pointIndex, totalPoints) => {
+      const angle = ((360 + noise(8)) / totalPoints) * pointIndex * (Math.PI / 180);
+      return [distance * Math.cos(angle), distance * Math.sin(angle)];
+    };
+    const createParticle = (i, t, d, r) => {
+      let rotate = noise(r / 10);
+      return {
+        start: getXY(d[0], particleCount - i, particleCount),
+        end: getXY(d[1] + noise(7), particleCount - i, particleCount),
+        time: t,
+        scale: 1 + noise(0.2),
+        color: colors[Math.floor(Math.random() * colors.length)],
+        rotate: rotate > 0 ? (rotate + r / 20) * 10 : (rotate - r / 20) * 10
+      };
+    };
+    const makeParticles = (element) => {
+      if (particleCount <= 0) return;
+      const d = particleDistances;
+      const r = particleR;
+      const bubbleTime = animationTime * 2 + timeVariance;
+      element.style.setProperty('--time', `${bubbleTime}ms`);
+      for (let i = 0; i < particleCount; i++) {
+        const t = animationTime * 2 + noise(timeVariance * 2);
+        const p = createParticle(i, t, d, r);
+        element.classList.remove('active');
+        setTimeout(() => {
+          const particle = document.createElement('span');
+          const point = document.createElement('span');
+          particle.classList.add('particle');
+          particle.style.setProperty('--start-x', `${p.start[0]}px`);
+          particle.style.setProperty('--start-y', `${p.start[1]}px`);
+          particle.style.setProperty('--end-x', `${p.end[0]}px`);
+          particle.style.setProperty('--end-y', `${p.end[1]}px`);
+          particle.style.setProperty('--time', `${p.time}ms`);
+          particle.style.setProperty('--scale', `${p.scale}`);
+          particle.style.setProperty('--color', `var(--color-${p.color}, white)`);
+          particle.style.setProperty('--rotate', `${p.rotate}deg`);
+          point.classList.add('point');
+          particle.appendChild(point);
+          element.appendChild(particle);
+          requestAnimationFrame(() => element.classList.add('active'));
+          setTimeout(() => {
+            try { element.removeChild(particle); } catch (e) {}
+          }, t);
+        }, 30);
+      }
+    };
+    const updateEffectPosition = (element) => {
+      const containerRect = container.getBoundingClientRect();
+      const pos = element.getBoundingClientRect();
+      const styles = {
+        left: `${pos.x - containerRect.x}px`,
+        top: `${pos.y - containerRect.y}px`,
+        width: `${pos.width}px`,
+        height: `${pos.height}px`
+      };
+      Object.assign(filterRef.style, styles);
+      Object.assign(textRef.style, styles);
+      textRef.innerText = element.innerText;
+    };
+    const setActive = (index, withParticles) => {
+      const items = navRef.querySelectorAll('li');
+      if (!items[index]) return;
+      items.forEach((li, i) => li.classList.toggle('active', i === index));
+      activeIndex = index;
+      updateEffectPosition(items[index]);
+      textRef.classList.remove('active');
+      void textRef.offsetWidth;
+      textRef.classList.add('active');
+      if (withParticles) {
+        filterRef.querySelectorAll('.particle').forEach(p => p.remove());
+        makeParticles(filterRef);
+      }
+    };
+    navRef.querySelectorAll('li').forEach((li, index) => {
+      const a = li.querySelector('a');
+      if (!a) return;
+      a.addEventListener('click', (e) => {
+        // 允许锚点跳转；只拦截重复点击的粒子浪费
+        if (activeIndex === index) return;
+        setActive(index, true);
+      });
+    });
+    // 初始定位
+    const initLi = navRef.querySelectorAll('li')[0];
+    if (initLi) {
+      setActive(0, false);
+      textRef.classList.add('active');
+    }
+    // 尺寸变化
+    if (window.ResizeObserver) {
+      new ResizeObserver(() => {
+        const cur = navRef.querySelectorAll('li')[activeIndex];
+        if (cur) updateEffectPosition(cur);
+      }).observe(container);
+    }
+    // 滚动高亮
+    const sectionIds = ['workspace', 'features', 'architecture', 'pricing', 'faq'];
+    const onScroll = () => {
+      const y = window.scrollY + 120;
+      let idx = 0;
+      sectionIds.forEach((id, i) => {
+        const el = document.getElementById(id);
+        if (el && el.offsetTop <= y) idx = i;
+      });
+      if (idx !== activeIndex) setActive(idx, false);
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+  })();
+
+</script>
+<script type="module">
+/**
+ * Galaxy — port of React Bits <Galaxy /> (ogl + WebGL)
+ * Tuned for 衍界: cyan-blue hue, transparent stars, mouse repulsion
+ */
+import { Renderer, Program, Mesh, Color, Triangle } from 'https://cdn.jsdelivr.net/npm/ogl@1.0.8/+esm';
+
+const vertexShader = `
+attribute vec2 uv;
+attribute vec2 position;
+varying vec2 vUv;
+void main() {
+  vUv = uv;
+  gl_Position = vec4(position, 0, 1);
+}
+`;
+
+const fragmentShader = `
+precision highp float;
+uniform float uTime;
+uniform vec3 uResolution;
+uniform vec2 uFocal;
+uniform vec2 uRotation;
+uniform float uStarSpeed;
+uniform float uDensity;
+uniform float uHueShift;
+uniform float uSpeed;
+uniform vec2 uMouse;
+uniform float uGlowIntensity;
+uniform float uSaturation;
+uniform bool uMouseRepulsion;
+uniform float uTwinkleIntensity;
+uniform float uRotationSpeed;
+uniform float uRepulsionStrength;
+uniform float uMouseActiveFactor;
+uniform float uAutoCenterRepulsion;
+uniform bool uTransparent;
+varying vec2 vUv;
+#define NUM_LAYER 4.0
+#define STAR_COLOR_CUTOFF 0.2
+#define MAT45 mat2(0.7071, -0.7071, 0.7071, 0.7071)
+#define PERIOD 3.0
+float Hash21(vec2 p) {
+  p = fract(p * vec2(123.34, 456.21));
+  p += dot(p, p + 45.32);
+  return fract(p.x * p.y);
+}
+float tri(float x) { return abs(fract(x) * 2.0 - 1.0); }
+float tris(float x) {
+  float t = fract(x);
+  return 1.0 - smoothstep(0.0, 1.0, abs(2.0 * t - 1.0));
+}
+float trisn(float x) {
+  float t = fract(x);
+  return 2.0 * (1.0 - smoothstep(0.0, 1.0, abs(2.0 * t - 1.0))) - 1.0;
+}
+vec3 hsv2rgb(vec3 c) {
+  vec4 K = vec4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
+  vec3 p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www);
+  return c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);
+}
+float Star(vec2 uv, float flare) {
+  float d = length(uv);
+  float m = (0.05 * uGlowIntensity) / d;
+  float rays = smoothstep(0.0, 1.0, 1.0 - abs(uv.x * uv.y * 1000.0));
+  m += rays * flare * uGlowIntensity;
+  uv *= MAT45;
+  rays = smoothstep(0.0, 1.0, 1.0 - abs(uv.x * uv.y * 1000.0));
+  m += rays * 0.3 * flare * uGlowIntensity;
+  m *= smoothstep(1.0, 0.2, d);
+  return m;
+}
+vec3 StarLayer(vec2 uv) {
+  vec3 col = vec3(0.0);
+  vec2 gv = fract(uv) - 0.5;
+  vec2 id = floor(uv);
+  for (int y = -1; y <= 1; y++) {
+    for (int x = -1; x <= 1; x++) {
+      vec2 offset = vec2(float(x), float(y));
+      vec2 si = id + vec2(float(x), float(y));
+      float seed = Hash21(si);
+      float size = fract(seed * 345.32);
+      float glossLocal = tri(uStarSpeed / (PERIOD * seed + 1.0));
+      float flareSize = smoothstep(0.9, 1.0, size) * glossLocal;
+      float red = smoothstep(STAR_COLOR_CUTOFF, 1.0, Hash21(si + 1.0)) + STAR_COLOR_CUTOFF;
+      float blu = smoothstep(STAR_COLOR_CUTOFF, 1.0, Hash21(si + 3.0)) + STAR_COLOR_CUTOFF;
+      float grn = min(red, blu) * seed;
+      vec3 base = vec3(red, grn, blu);
+      float hue = atan(base.g - base.r, base.b - base.r) / (2.0 * 3.14159) + 0.5;
+      hue = fract(hue + uHueShift / 360.0);
+      float sat = length(base - vec3(dot(base, vec3(0.299, 0.587, 0.114)))) * uSaturation;
+      float val = max(max(base.r, base.g), base.b);
+      base = hsv2rgb(vec3(hue, sat, val));
+      vec2 pad = vec2(tris(seed * 34.0 + uTime * uSpeed / 10.0), tris(seed * 38.0 + uTime * uSpeed / 30.0)) - 0.5;
+      float star = Star(gv - offset - pad, flareSize);
+      float twinkle = trisn(uTime * uSpeed + seed * 6.2831) * 0.5 + 1.0;
+      twinkle = mix(1.0, twinkle, uTwinkleIntensity);
+      star *= twinkle;
+      col += star * size * base;
+    }
+  }
+  return col;
+}
+void main() {
+  vec2 focalPx = uFocal * uResolution.xy;
+  vec2 uv = (vUv * uResolution.xy - focalPx) / uResolution.y;
+  vec2 mouseNorm = uMouse - vec2(0.5);
+  if (uAutoCenterRepulsion > 0.0) {
+    vec2 centerUV = vec2(0.0, 0.0);
+    float centerDist = length(uv - centerUV);
+    vec2 repulsion = normalize(uv - centerUV) * (uAutoCenterRepulsion / (centerDist + 0.1));
+    uv += repulsion * 0.05;
+  } else if (uMouseRepulsion) {
+    vec2 mousePosUV = (uMouse * uResolution.xy - focalPx) / uResolution.y;
+    float mouseDist = length(uv - mousePosUV);
+    vec2 repulsion = normalize(uv - mousePosUV) * (uRepulsionStrength / (mouseDist + 0.1));
+    uv += repulsion * 0.05 * uMouseActiveFactor;
+  } else {
+    uv += mouseNorm * 0.1 * uMouseActiveFactor;
+  }
+  float autoRotAngle = uTime * uRotationSpeed;
+  mat2 autoRot = mat2(cos(autoRotAngle), -sin(autoRotAngle), sin(autoRotAngle), cos(autoRotAngle));
+  uv = autoRot * uv;
+  uv = mat2(uRotation.x, -uRotation.y, uRotation.y, uRotation.x) * uv;
+  vec3 col = vec3(0.0);
+  for (float i = 0.0; i < 1.0; i += 1.0 / NUM_LAYER) {
+    float depth = fract(i + uStarSpeed * uSpeed);
+    float scale = mix(20.0 * uDensity, 0.5 * uDensity, depth);
+    float fade = depth * smoothstep(1.0, 0.9, depth);
+    col += StarLayer(uv * scale + i * 453.32) * fade;
+  }
+  if (uTransparent) {
+    float alpha = length(col);
+    alpha = smoothstep(0.0, 0.3, alpha);
+    alpha = min(alpha, 1.0);
+    gl_FragColor = vec4(col, alpha);
+  } else {
+    gl_FragColor = vec4(col, 1.0);
+  }
+}
+`;
+
+function mountGalaxy(ctn, opts = {}) {
+  const {
+    focal = [0.5, 0.5],
+    rotation = [1.0, 0.0],
+    starSpeed = 0.55,
+    density = 1.65,
+    hueShift = 0,            // 参考图：近乎白/银，不做青蓝偏移
+    disableAnimation = false,
+    speed = 1.05,
+    mouseInteraction = true,
+    glowIntensity = 0.72,    // 强光晕 + 十字芒
+    saturation = 0.08,       // 接近灰度，略留一点星色
+    mouseRepulsion = true,
+    repulsionStrength = 2.4,
+    twinkleIntensity = 0.48,
+    rotationSpeed = 0.06,
+    autoCenterRepulsion = 0,
+    transparent = true,
+  } = opts;
+
+  const renderer = new Renderer({ alpha: transparent, premultipliedAlpha: false, dpr: Math.min(window.devicePixelRatio || 1, 2) });
+  const gl = renderer.gl;
+  if (transparent) {
+    gl.enable(gl.BLEND);
+    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+    gl.clearColor(0, 0, 0, 0);
+  } else {
+    gl.clearColor(0, 0, 0, 1);
+  }
+
+  const targetMousePos = { x: 0.5, y: 0.5 };
+  const smoothMousePos = { x: 0.5, y: 0.5 };
+  let targetMouseActive = 0.0;
+  let smoothMouseActive = 0.0;
+
+  let program;
+  function resize() {
+    const w = ctn.offsetWidth || window.innerWidth;
+    const h = ctn.offsetHeight || window.innerHeight;
+    renderer.setSize(w, h);
+    if (program) {
+      program.uniforms.uResolution.value = new Color(gl.canvas.width, gl.canvas.height, gl.canvas.width / gl.canvas.height);
+    }
+  }
+  window.addEventListener('resize', resize, { passive: true });
+  resize();
+
+  const geometry = new Triangle(gl);
+  program = new Program(gl, {
+    vertex: vertexShader,
+    fragment: fragmentShader,
+    uniforms: {
+      uTime: { value: 0 },
+      uResolution: { value: new Color(gl.canvas.width, gl.canvas.height, gl.canvas.width / gl.canvas.height) },
+      uFocal: { value: new Float32Array(focal) },
+      uRotation: { value: new Float32Array(rotation) },
+      uStarSpeed: { value: starSpeed },
+      uDensity: { value: density },
+      uHueShift: { value: hueShift },
+      uSpeed: { value: speed },
+      uMouse: { value: new Float32Array([0.5, 0.5]) },
+      uGlowIntensity: { value: glowIntensity },
+      uSaturation: { value: saturation },
+      uMouseRepulsion: { value: mouseRepulsion },
+      uTwinkleIntensity: { value: twinkleIntensity },
+      uRotationSpeed: { value: rotationSpeed },
+      uRepulsionStrength: { value: repulsionStrength },
+      uMouseActiveFactor: { value: 0.0 },
+      uAutoCenterRepulsion: { value: autoCenterRepulsion },
+      uTransparent: { value: transparent },
+    },
+  });
+  const mesh = new Mesh(gl, { geometry, program });
+  ctn.appendChild(gl.canvas);
+
+  let animateId;
+  let running = true;
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  function update(t) {
+    if (!running) return;
+    animateId = requestAnimationFrame(update);
+    if (!disableAnimation && !reduce) {
+      program.uniforms.uTime.value = t * 0.001;
+      program.uniforms.uStarSpeed.value = (t * 0.001 * starSpeed) / 10.0;
+    }
+    const lerp = 0.05;
+    smoothMousePos.x += (targetMousePos.x - smoothMousePos.x) * lerp;
+    smoothMousePos.y += (targetMousePos.y - smoothMousePos.y) * lerp;
+    smoothMouseActive += (targetMouseActive - smoothMouseActive) * lerp;
+    program.uniforms.uMouse.value[0] = smoothMousePos.x;
+    program.uniforms.uMouse.value[1] = smoothMousePos.y;
+    program.uniforms.uMouseActiveFactor.value = smoothMouseActive;
+    renderer.render({ scene: mesh });
+  }
+  animateId = requestAnimationFrame(update);
+
+  function onMove(e) {
+    const rect = ctn.getBoundingClientRect();
+    targetMousePos.x = (e.clientX - rect.left) / rect.width;
+    targetMousePos.y = 1.0 - (e.clientY - rect.top) / rect.height;
+    targetMouseActive = 1.0;
+  }
+  function onLeave() { targetMouseActive = 0.0; }
+
+  // pointer-events none on container → listen on window for interaction
+  if (mouseInteraction) {
+    window.addEventListener('mousemove', onMove, { passive: true });
+    window.addEventListener('mouseleave', onLeave);
+  }
+
+  document.body.classList.add('galaxy-on');
+
+  return () => {
+    running = false;
+    cancelAnimationFrame(animateId);
+    window.removeEventListener('resize', resize);
+    if (mouseInteraction) {
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseleave', onLeave);
+    }
+    if (gl.canvas.parentNode) gl.canvas.parentNode.removeChild(gl.canvas);
+    gl.getExtension('WEBGL_lose_context')?.loseContext();
+    document.body.classList.remove('galaxy-on');
+  };
+}
+
+const el = document.getElementById('galaxy');
+if (el) {
+  try {
+    mountGalaxy(el, {
+      // 对标参考图：黑底 + 高亮白星 + 强光晕
+      density: 1.75,
+      hueShift: 0,
+      saturation: 0.06,
+      glowIntensity: 0.78,
+      starSpeed: 0.5,
+      speed: 1.0,
+      rotationSpeed: 0.05,
+      mouseRepulsion: true,
+      mouseInteraction: true,
+      twinkleIntensity: 0.5,
+      repulsionStrength: 2.6,
+      transparent: true,
+    });
+  } catch (err) {
+    console.warn('[Galaxy] init failed, keeping fallback sky', err);
+    const sky = document.getElementById('sky');
+    if (sky) sky.hidden = false;
+  }
+}
+</script>
+
+</body>
+</html>

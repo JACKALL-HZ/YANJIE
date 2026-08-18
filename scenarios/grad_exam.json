@@ -1,0 +1,57 @@
+{
+  "scenario_id": "grad_exam",
+  "title": "考研决策推演",
+  "version": 1,
+  "decision_vars": [
+    { "name": "target_school", "value_type": "string", "required": true, "default": "985院校" },
+    { "name": "current_level", "value_type": "string", "required": true, "default": "普通本科" },
+    { "name": "prep_months", "value_type": "integer", "required": true, "default": 6, "minimum": 1, "maximum": 24 },
+    { "name": "budget", "value_type": "integer", "required": false, "default": 30000, "minimum": 0, "maximum": 200000 }
+  ],
+  "initial_world_state": {
+    "cash_flow": 30000,
+    "customer_flow": 240,
+    "competition_count": 85,
+    "monthly_profit": 60,
+    "payback_ratio": 0.15
+  },
+  "state_metrics": [
+    { "metric_id": "study_budget", "label": "可用备考预算", "unit": "元", "initial_value": 0, "display_order": 1, "source_metric": "cash_flow" },
+    { "metric_id": "study_time", "label": "学习投入", "unit": "分", "initial_value": 0, "display_order": 2, "source_metric": "customer_flow" },
+    { "metric_id": "admission_competition", "label": "目标竞争压力", "unit": "分", "initial_value": 0, "display_order": 3, "source_metric": "competition_count" },
+    { "metric_id": "learning_progress", "label": "阶段完成度", "unit": "分", "initial_value": 0, "display_order": 4, "source_metric": "monthly_profit" },
+    { "metric_id": "admission_readiness", "label": "录取准备度", "unit": "%", "initial_value": 0, "display_order": 5, "source_metric": "payback_ratio" }
+  ],
+  "agents": [
+    { "agent_id": "market", "name": "教育市场智能体", "stance": "分析报考趋势与竞争格局", "goal": "评估目标院校的竞争烈度与录取概率", "action_ids": ["market.analyze_trend", "market.adjust_target"] },
+    { "agent_id": "environment", "name": "政策环境智能体", "stance": "关注教育政策与招生变化", "goal": "监控考研政策、招生名额与分数线变动", "action_ids": ["environment.monitor_policy", "environment.adapt_plan"] },
+    { "agent_id": "personal", "name": "个人能力智能体", "stance": "评估学习能力与自律水平", "goal": "制定合理的学习计划并保持执行力", "action_ids": ["personal.intensive_study", "personal.balanced_plan"] },
+    { "agent_id": "risk", "name": "风险评估智能体", "stance": "识别备考风险与备选方案", "goal": "预警学习倦怠、经济压力与竞争风险", "action_ids": ["risk.early_warning", "risk.prepare_planb"] }
+  ],
+  "action_effects": [
+    { "action_id": "market.analyze_trend", "effects": { "cash_flow": -2000, "customer_flow": 30, "competition_count": -5, "monthly_profit": 5, "payback_ratio": 0.08 }, "reason_template": "深入分析目标院校历年录取数据，调整备考方向。" },
+    { "action_id": "market.adjust_target", "effects": { "cash_flow": -1000, "customer_flow": -10, "competition_count": -20, "monthly_profit": -3, "payback_ratio": 0.1 }, "reason_template": "根据竞争态势调整目标院校层级。" },
+    { "action_id": "environment.monitor_policy", "effects": { "cash_flow": -500, "customer_flow": 10, "monthly_profit": 3, "payback_ratio": 0.03 }, "reason_template": "持续关注招生政策变化，及时调整策略。" },
+    { "action_id": "environment.adapt_plan", "effects": { "cash_flow": -1500, "customer_flow": 20, "monthly_profit": 8, "payback_ratio": 0.06 }, "reason_template": "根据政策环境调整备考计划与时间分配。" },
+    { "action_id": "personal.intensive_study", "effects": { "cash_flow": -5000, "customer_flow": 60, "monthly_profit": 15, "payback_ratio": 0.12 }, "reason_template": "高强度集中备考，大幅提升学习时长与效率。" },
+    { "action_id": "personal.balanced_plan", "effects": { "cash_flow": -2000, "customer_flow": 25, "monthly_profit": 6, "payback_ratio": 0.05 }, "reason_template": "保持均衡的学习节奏，兼顾效率与可持续性。" },
+    { "action_id": "risk.early_warning", "effects": { "cash_flow": -1000, "competition_count": -3, "monthly_profit": 2, "payback_ratio": 0.04 }, "reason_template": "识别备考倦怠信号，提前介入调整。" },
+    { "action_id": "risk.prepare_planb", "effects": { "cash_flow": -3000, "customer_flow": -5, "monthly_profit": -2, "payback_ratio": 0.07 }, "reason_template": "准备调剂或就业备选方案，降低单一目标风险。" }
+  ],
+  "intervention_effects": [
+    { "action_id": "intervention.increase_hours", "effects": { "cash_flow": -3000, "customer_flow": 40, "monthly_profit": 10, "payback_ratio": 0.08 }, "reason_template": "增加每日学习时长，全力冲刺。" },
+    { "action_id": "intervention.change_school", "effects": { "cash_flow": -2000, "competition_count": -15, "monthly_profit": -5, "payback_ratio": 0.06 }, "reason_template": "更换目标院校，选择竞争压力较小的选项。" },
+    { "action_id": "intervention.rest_recover", "effects": { "cash_flow": -1000, "customer_flow": -20, "monthly_profit": 5, "payback_ratio": 0.02 }, "reason_template": "适当休息恢复，避免过度疲劳。" },
+    { "action_id": "intervention.work_and_prepare", "effects": { "cash_flow": 6000, "customer_flow": -10, "monthly_profit": 4, "payback_ratio": 0.04 }, "reason_template": "通过兼职或工作补充资金，同时保留稳定的备考时间。" }
+  ],
+  "end_conditions": {
+    "bankrupt": { "metric": "cash_flow", "operator": "<=", "threshold": 0 },
+    "goal_reached": { "metric": "payback_ratio", "operator": ">=", "threshold": 0.9 },
+    "steady_state": { "metric": "monthly_profit", "operator": ">=", "threshold": 85 },
+    "timeout_years": 3
+  },
+  "intervention_rules": [
+    { "rule_id": "burnout_warning", "metric": "customer_flow", "operator": "<=", "threshold": 150, "event": "学习时长持续偏低，可能面临备考不足的风险，你需要做出选择。", "options": ["增加学习强度", "调整目标院校"], "option_actions": { "增加学习强度": "intervention.increase_hours", "调整目标院校": "intervention.change_school" }, "max_uses": 2 },
+    { "rule_id": "financial_pressure", "metric": "cash_flow", "operator": "<=", "threshold": 8000, "event": "备考资金紧张，需要决定是否继续全力备考。", "options": ["继续冲刺", "边工作边备考"], "option_actions": { "继续冲刺": "intervention.increase_hours", "边工作边备考": "intervention.work_and_prepare" }, "max_uses": 1 }
+  ]
+}

@@ -1,0 +1,55 @@
+{
+  "scenario_id": "investment",
+  "title": "投资理财推演",
+  "version": 1,
+  "decision_vars": [
+    { "name": "investment_amount", "value_type": "integer", "required": true, "default": 100000, "minimum": 1000, "maximum": 10000000 },
+    { "name": "risk_level", "value_type": "string", "required": true, "default": "balanced" },
+    { "name": "span_years", "value_type": "integer", "required": false, "default": 3, "minimum": 1, "maximum": 5 }
+  ],
+  "initial_world_state": {
+    "cash_flow": 100000,
+    "customer_flow": 5,
+    "competition_count": 50,
+    "monthly_profit": 2000,
+    "payback_ratio": 0.05
+  },
+  "state_metrics": [
+    { "metric_id": "liquidity_reserve", "label": "投资外流动性", "unit": "元", "initial_value": 0, "display_order": 1, "source_metric": "cash_flow" },
+    { "metric_id": "portfolio_diversification", "label": "资产分散度", "unit": "分", "initial_value": 0, "display_order": 2, "source_metric": "customer_flow" },
+    { "metric_id": "market_volatility", "label": "市场波动压力", "unit": "分", "initial_value": 0, "display_order": 3, "source_metric": "competition_count" },
+    { "metric_id": "drawdown_control", "label": "收益表现", "unit": "元/月", "initial_value": 0, "display_order": 4, "source_metric": "monthly_profit" },
+    { "metric_id": "return_progress", "label": "目标达成度", "unit": "%", "initial_value": 0, "display_order": 5, "source_metric": "payback_ratio" }
+  ],
+  "agents": [
+    { "agent_id": "market", "name": "市场分析智能体", "stance": "分析资产价格走势与板块轮动", "goal": "识别投资机会与市场周期", "action_ids": ["market.analyze_sector", "market.timing_signal"] },
+    { "agent_id": "environment", "name": "宏观环境智能体", "stance": "关注货币政策与宏观指标", "goal": "监控利率、通胀与政策对资产价格的影响", "action_ids": ["environment.track_macro", "environment.policy_arbitrage"] },
+    { "agent_id": "personal", "name": "个人财务智能体", "stance": "评估风险承受力与现金流", "goal": "平衡收益目标与流动性需求", "action_ids": ["personal.balance_portfolio", "personal.increase_capital"] },
+    { "agent_id": "risk", "name": "风险控制智能体", "stance": "识别回撤风险与尾部事件", "goal": "控制最大回撤，防范黑天鹅事件", "action_ids": ["risk.set_stoploss", "risk.hedge_tailrisk"] }
+  ],
+  "action_effects": [
+    { "action_id": "market.analyze_sector", "effects": { "cash_flow": -500, "customer_flow": 2, "competition_count": -3, "monthly_profit": 500, "payback_ratio": 0.04 }, "reason_template": "深入分析行业板块轮动，聚焦高景气赛道。" },
+    { "action_id": "market.timing_signal", "effects": { "cash_flow": -1000, "customer_flow": 3, "monthly_profit": 3000, "payback_ratio": 0.08 }, "reason_template": "捕捉市场择时信号，优化买卖时机。" },
+    { "action_id": "environment.track_macro", "effects": { "cash_flow": -300, "customer_flow": 1, "monthly_profit": 800, "payback_ratio": 0.03 }, "reason_template": "跟踪CPI、PMI等宏观指标，预判政策方向。" },
+    { "action_id": "environment.policy_arbitrage", "effects": { "cash_flow": -2000, "monthly_profit": 4000, "payback_ratio": 0.07 }, "reason_template": "利用政策红利进行套利操作。" },
+    { "action_id": "personal.balance_portfolio", "effects": { "cash_flow": -3000, "customer_flow": -1, "competition_count": -5, "monthly_profit": 1500, "payback_ratio": 0.05 }, "reason_template": "动态再平衡投资组合，控制单一资产风险。" },
+    { "action_id": "personal.increase_capital", "effects": { "cash_flow": 20000, "monthly_profit": 2000, "payback_ratio": 0.04 }, "reason_template": "追加投资本金，扩大收益基数。" },
+    { "action_id": "risk.set_stoploss", "effects": { "cash_flow": -500, "competition_count": -5, "monthly_profit": -500, "payback_ratio": 0.06 }, "reason_template": "设置止损线，控制单笔投资最大亏损。" },
+    { "action_id": "risk.hedge_tailrisk", "effects": { "cash_flow": -2000, "monthly_profit": -300, "payback_ratio": 0.05 }, "reason_template": "购买对冲工具，防范极端市场事件。" }
+  ],
+  "intervention_effects": [
+    { "action_id": "intervention.cut_loss", "effects": { "cash_flow": 15000, "customer_flow": -3, "monthly_profit": -2000, "payback_ratio": 0.1 }, "reason_template": "止损离场，保存本金等待下次机会。" },
+    { "action_id": "intervention.double_down", "effects": { "cash_flow": -20000, "customer_flow": 5, "monthly_profit": 8000, "payback_ratio": 0.15 }, "reason_template": "加大投入，在低点加仓摊薄成本。" },
+    { "action_id": "intervention.switch_strategy", "effects": { "cash_flow": -2000, "customer_flow": 2, "competition_count": -5, "monthly_profit": 1000, "payback_ratio": 0.05 }, "reason_template": "转换投资策略，从进攻型切换为防御型。" }
+  ],
+  "end_conditions": {
+    "bankrupt": { "metric": "cash_flow", "operator": "<=", "threshold": 5000 },
+    "goal_reached": { "metric": "payback_ratio", "operator": ">=", "threshold": 0.8 },
+    "steady_state": { "metric": "monthly_profit", "operator": ">=", "threshold": 5000 },
+    "timeout_years": 3
+  },
+  "intervention_rules": [
+    { "rule_id": "sharp_decline", "metric": "monthly_profit", "operator": "<=", "threshold": -1000, "event": "投资出现大幅回撤，需要做出关键决策。", "options": ["止损离场", "逢低加仓"], "option_actions": { "止损离场": "intervention.cut_loss", "逢低加仓": "intervention.double_down" }, "max_uses": 2 },
+    { "rule_id": "profit_target", "metric": "payback_ratio", "operator": ">=", "threshold": 0.6, "event": "投资收益已达阶段性目标，是否止盈？", "options": ["止盈锁定收益", "继续持有"], "option_actions": { "止盈锁定收益": "intervention.cut_loss", "继续持有": "intervention.switch_strategy" }, "max_uses": 1 }
+  ]
+}

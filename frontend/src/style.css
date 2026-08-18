@@ -1,0 +1,91 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── 基础 ─────────────────────────────────────── */
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    @apply bg-abyss text-ink-primary font-sans antialiased;
+    line-height: 1.7;
+  }
+  ::selection {
+    background: rgba(79, 140, 255, 0.35);
+    color: #fff;
+  }
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #0b0f1a;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #222b40;
+    border-radius: 999px;
+    border: 2px solid #0b0f1a;
+  }
+  :focus-visible {
+    outline: 2px solid rgba(79, 140, 255, 0.7);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+}
+
+/* ── 液态玻璃 ─────────────────────────────────── */
+@layer components {
+  .glass {
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(18px) saturate(140%);
+    -webkit-backdrop-filter: blur(18px) saturate(140%);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.06),
+      0 12px 40px rgba(0, 0, 0, 0.35);
+  }
+  .glass-strong {
+    background: rgba(20, 26, 42, 0.62);
+    backdrop-filter: blur(24px) saturate(150%);
+    -webkit-backdrop-filter: blur(24px) saturate(150%);
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.08),
+      0 20px 60px rgba(0, 0, 0, 0.45);
+  }
+  .glow-brand {
+    box-shadow:
+      0 0 0 1px rgba(79, 140, 255, 0.28),
+      0 12px 36px rgba(79, 140, 255, 0.12);
+  }
+  .text-glow {
+    text-shadow: 0 0 24px rgba(79, 140, 255, 0.45);
+  }
+  .eyebrow {
+    @apply font-mono text-xs uppercase tracking-[0.2em] text-cyan-glow;
+  }
+  .skeleton {
+    @apply animate-shimmer rounded-btn bg-surface-2;
+    background-image: linear-gradient(
+      100deg,
+      transparent 30%,
+      rgba(255, 255, 255, 0.05) 50%,
+      transparent 70%
+    );
+    background-size: 200% 100%;
+  }
+}
+
+/* ── 降动效 ───────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

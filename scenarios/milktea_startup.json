@@ -1,0 +1,361 @@
+{
+  "scenario_id": "milktea_startup",
+  "title": "奶茶店创业",
+  "version": 1,
+  "decision_vars": [
+    {
+      "name": "budget",
+      "value_type": "integer",
+      "required": true,
+      "default": 200000,
+      "minimum": 1,
+      "maximum": 1000000
+    },
+    {
+      "name": "city",
+      "value_type": "string",
+      "required": true,
+      "default": "杭州"
+    },
+    {
+      "name": "industry",
+      "value_type": "string",
+      "required": true,
+      "default": "milk_tea"
+    },
+    {
+      "name": "span_years",
+      "value_type": "integer",
+      "required": false,
+      "default": 3,
+      "minimum": 1,
+      "maximum": 3
+    }
+  ],
+  "initial_world_state": {
+    "cash_flow": 200000,
+    "customer_flow": 100,
+    "competition_count": 28,
+    "monthly_profit": 0,
+    "payback_ratio": 0
+  },
+  "agents": [
+    {
+      "agent_id": "market",
+      "name": "市场智能体",
+      "stance": "关注顾客需求与竞争格局",
+      "goal": "提升获客能力，同时避免耗尽现金储备",
+      "action_ids": [
+        "market.differentiate",
+        "market.hold"
+      ]
+    },
+    {
+      "agent_id": "environment",
+      "name": "环境智能体",
+      "stance": "关注所在地与经营环境",
+      "goal": "让门店适应当地经营条件",
+      "action_ids": [
+        "environment.localize",
+        "environment.monitor"
+      ]
+    },
+    {
+      "agent_id": "personal",
+      "name": "个人智能体",
+      "stance": "关注创始人的能力与精力",
+      "goal": "让创始人保持可持续的执行节奏",
+      "action_ids": [
+        "personal.stabilize",
+        "personal.defer"
+      ]
+    },
+    {
+      "agent_id": "risk",
+      "name": "风险智能体",
+      "stance": "关注下行损失与脆弱点",
+      "goal": "限制不可逆损失和竞争压力",
+      "action_ids": [
+        "risk.contain",
+        "risk.insure"
+      ]
+    }
+  ],
+  "action_effects": [
+    {
+      "action_id": "market.differentiate",
+      "effects": {
+        "cash_flow": -22000,
+        "customer_flow": 35,
+        "competition_count": -4,
+        "monthly_profit": 8000,
+        "payback_ratio": 0.1
+      },
+      "reason_template": "Differentiate the offer to grow repeat demand."
+    },
+    {
+      "action_id": "market.hold",
+      "effects": {
+        "cash_flow": -5000,
+        "customer_flow": 5,
+        "monthly_profit": 1000,
+        "payback_ratio": 0.02
+      },
+      "reason_template": "Hold the current offer while collecting more demand data."
+    },
+    {
+      "action_id": "environment.localize",
+      "effects": {
+        "cash_flow": -8000,
+        "customer_flow": 10,
+        "monthly_profit": 2000,
+        "payback_ratio": 0.05
+      },
+      "reason_template": "Adapt the operating model to the selected city."
+    },
+    {
+      "action_id": "environment.monitor",
+      "effects": {
+        "cash_flow": -2000,
+        "monthly_profit": 500,
+        "payback_ratio": 0.01
+      },
+      "reason_template": "Monitor the environment before making a larger commitment."
+    },
+    {
+      "action_id": "personal.stabilize",
+      "effects": {
+        "cash_flow": -8000,
+        "monthly_profit": 1500,
+        "payback_ratio": 0.05
+      },
+      "reason_template": "Stabilize the founder workload and operating cadence."
+    },
+    {
+      "action_id": "personal.defer",
+      "effects": {
+        "cash_flow": -2000,
+        "monthly_profit": 300,
+        "payback_ratio": 0.01
+      },
+      "reason_template": "Defer nonessential commitments while preserving capacity."
+    },
+    {
+      "action_id": "risk.contain",
+      "effects": {
+        "cash_flow": -7000,
+        "competition_count": -1,
+        "monthly_profit": 500,
+        "payback_ratio": 0.02
+      },
+      "reason_template": "Contain downside exposure and protect the operating base."
+    },
+    {
+      "action_id": "risk.insure",
+      "effects": {
+        "cash_flow": -3000,
+        "monthly_profit": -200,
+        "payback_ratio": 0.01
+      },
+      "reason_template": "Accept a small recurring cost to reduce downside volatility."
+    },
+    {
+      "action_id": "decision.celebrity_endorsement",
+      "effects": {
+        "cash_flow": -80000,
+        "customer_flow": 70,
+        "monthly_profit": 9000,
+        "payback_ratio": 0.04
+      },
+      "reason_template": "启用明星代言，快速扩大品牌曝光。"
+    },
+    {
+      "action_id": "decision.product_differentiation",
+      "effects": {
+        "cash_flow": -22000,
+        "customer_flow": 35,
+        "competition_count": -4,
+        "monthly_profit": 8000,
+        "payback_ratio": 0.1
+      },
+      "reason_template": "投入产品差异化，争取稳定复购。"
+    },
+    {
+      "action_id": "decision.local_collaboration",
+      "effects": {
+        "cash_flow": -18000,
+        "customer_flow": 28,
+        "monthly_profit": 3500,
+        "payback_ratio": 0.06
+      },
+      "reason_template": "开展本地小型联名，以较低成本测试曝光效果。"
+    },
+    {
+      "action_id": "decision.increase_marketing_budget",
+      "effects": {"cash_flow": -50000, "customer_flow": 50, "monthly_profit": 5000, "payback_ratio": 0.03},
+      "reason_template": "追加营销预算，争取更快获客。"
+    },
+    {
+      "action_id": "decision.targeted_marketing",
+      "effects": {"cash_flow": -18000, "customer_flow": 24, "monthly_profit": 3500, "payback_ratio": 0.06},
+      "reason_template": "将预算集中到高转化时段和客群。"
+    },
+    {
+      "action_id": "decision.marketing_trial",
+      "effects": {"cash_flow": -6000, "customer_flow": 10, "monthly_profit": 1000, "payback_ratio": 0.02},
+      "reason_template": "用小预算测试营销渠道。"
+    },
+    {
+      "action_id": "decision.peer_collaboration",
+      "effects": {"cash_flow": -12000, "customer_flow": 18, "monthly_profit": 1800, "payback_ratio": 0.04},
+      "reason_template": "与同业门店联合促销。"
+    },
+    {
+      "action_id": "decision.cross_industry_collaboration",
+      "effects": {"cash_flow": -16000, "customer_flow": 30, "monthly_profit": 3200, "payback_ratio": 0.06},
+      "reason_template": "与本地互补品牌开展联名。"
+    },
+    {
+      "action_id": "decision.collaboration_trial",
+      "effects": {"cash_flow": -4000, "customer_flow": 8, "monthly_profit": 500, "payback_ratio": 0.01},
+      "reason_template": "先进行短期互推试验。"
+    }
+  ],
+  "intervention_effects": [
+    {
+      "action_id": "intervention.cut_costs",
+      "effects": {
+        "cash_flow": 50000,
+        "monthly_profit": 5000,
+        "payback_ratio": 0.1
+      },
+      "reason_template": "Cut operating costs to restore cash resilience."
+    },
+    {
+      "action_id": "intervention.expand_marketing",
+      "effects": {
+        "cash_flow": -20000,
+        "customer_flow": 40,
+        "monthly_profit": 8000,
+        "payback_ratio": 0.05
+      },
+      "reason_template": "Spend more to accelerate customer acquisition."
+    },
+    {
+      "action_id": "intervention.reprice",
+      "effects": {
+        "cash_flow": 10000,
+        "customer_flow": -5,
+        "monthly_profit": 6000,
+        "payback_ratio": 0.08
+      },
+      "reason_template": "Reprice the offer to improve unit economics."
+    },
+    {
+      "action_id": "intervention.hold",
+      "effects": {
+        "cash_flow": 0,
+        "monthly_profit": 0,
+        "payback_ratio": 0
+      },
+      "reason_template": "Hold the current operating plan."
+    }
+  ],
+  "end_conditions": {
+    "bankrupt": {
+      "metric": "cash_flow",
+      "operator": "<=",
+      "threshold": 0
+    },
+    "goal_reached": {
+      "metric": "payback_ratio",
+      "operator": ">=",
+      "threshold": 1
+    },
+    "steady_state": {
+      "metric": "monthly_profit",
+      "operator": ">=",
+      "threshold": 50000
+    },
+    "timeout_years": 3
+  },
+  "intervention_rules": [
+    {
+      "rule_id": "cash_pressure",
+      "metric": "cash_flow",
+      "operator": "<=",
+      "threshold": 60000,
+      "event": "Cash pressure requires a choice.",
+      "options": [
+        "cut_costs",
+        "expand_marketing"
+      ],
+      "max_uses": 1
+    },
+    {
+      "rule_id": "customer_pressure",
+      "metric": "customer_flow",
+      "operator": "<=",
+      "threshold": 90,
+      "event": "Customer flow is below the operating threshold.",
+      "options": [
+        "reprice",
+        "hold"
+      ],
+      "max_uses": 2
+    }
+  ],
+  "decision_catalogue": [
+    {
+      "decision_id": "celebrity_endorsement",
+      "label": "明星代言",
+      "keywords": ["明星代言", "请明星", "找代言人", "明星推广"],
+      "branches": [
+        {
+          "branch_id": "user_proposal",
+          "label": "坚持明星代言",
+          "action_id": "decision.celebrity_endorsement",
+          "description": "快速购买品牌曝光，换取更大的客流增长机会。",
+          "risk_level": "high",
+          "worst_case_loss": 80000
+        },
+        {
+          "branch_id": "expert_recommendation",
+          "label": "优先产品差异化",
+          "action_id": "decision.product_differentiation",
+          "description": "先把产品和复购做扎实，再逐步扩大品牌投入。",
+          "risk_level": "medium",
+          "worst_case_loss": 22000
+        },
+        {
+          "branch_id": "low_cost_alternative",
+          "label": "本地小型联名",
+          "action_id": "decision.local_collaboration",
+          "description": "用低成本联名测试引流效果，保留后续加码空间。",
+          "risk_level": "low",
+          "worst_case_loss": 18000
+        }
+      ]
+    },
+    {
+      "decision_id": "increase_marketing_budget",
+      "label": "追加营销预算",
+      "keywords": ["加大投资预算", "加大预算", "增加预算", "追加投入", "加大营销"],
+      "branches": [
+        {"branch_id": "user_proposal", "label": "直接追加营销预算", "action_id": "decision.increase_marketing_budget", "description": "用较大投入换取更快的客流增长。", "risk_level": "high", "worst_case_loss": 50000},
+        {"branch_id": "expert_recommendation", "label": "聚焦高转化营销", "action_id": "decision.targeted_marketing", "description": "把预算集中到更容易成交的客群和时段。", "risk_level": "medium", "worst_case_loss": 18000},
+        {"branch_id": "low_cost_alternative", "label": "小预算渠道测试", "action_id": "decision.marketing_trial", "description": "先验证渠道效果，再决定是否加码。", "risk_level": "low", "worst_case_loss": 6000}
+      ]
+    },
+    {
+      "decision_id": "store_collaboration",
+      "label": "门店联名",
+      "keywords": ["联名", "合作", "互推", "联合促销"],
+      "branches": [
+        {"branch_id": "user_proposal", "label": "与同业联合促销", "action_id": "decision.peer_collaboration", "description": "直接与其他奶茶门店合作扩大曝光。", "risk_level": "medium", "worst_case_loss": 12000},
+        {"branch_id": "expert_recommendation", "label": "与互补品牌联名", "action_id": "decision.cross_industry_collaboration", "description": "选择客群互补的本地品牌，减少同业分流。", "risk_level": "medium", "worst_case_loss": 16000},
+        {"branch_id": "low_cost_alternative", "label": "七天互推试验", "action_id": "decision.collaboration_trial", "description": "先以短期活动验证合作价值。", "risk_level": "low", "worst_case_loss": 4000}
+      ]
+    }
+  ]
+}

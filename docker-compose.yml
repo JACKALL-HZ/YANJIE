@@ -1,0 +1,62 @@
+# 衍界 YanJie AI · 生产编排
+# 用法：
+#   1. cp deploy/backend.env.example deploy/backend.env && 编辑填入真实密钥
+#   2. docker compose up -d --build
+#   3. 访问 http://<服务器IP> （前端 Nginx 已反代 /api）
+
+services:
+  db:
+    image: pgvector/pgvector:0.7.4-pg16
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-yanjie}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-yanjie_pw}
+      POSTGRES_DB: ${POSTGRES_DB:-yanjie}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./deploy/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-yanjie}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  backend:
+    build: .
+    env_file:
+      - ./deploy/backend.env
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - chroma_data:/app/chroma_data
+    # 仅内网暴露，外部经 Nginx 反代访问
+    expose:
+      - "8000"
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    depends_on:
+      - backend
+    ports:
+      - "${HTTP_PORT:-80}:80"
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+  redisdata:
+  chroma_data:

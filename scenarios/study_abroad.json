@@ -1,0 +1,56 @@
+{
+  "scenario_id": "study_abroad",
+  "title": "留学决策推演",
+  "version": 1,
+  "decision_vars": [
+    { "name": "target_country", "value_type": "string", "required": true, "default": "美国" },
+    { "name": "target_major", "value_type": "string", "required": true, "default": "计算机科学" },
+    { "name": "budget", "value_type": "integer", "required": true, "default": 500000, "minimum": 50000, "maximum": 2000000 },
+    { "name": "span_years", "value_type": "integer", "required": false, "default": 2, "minimum": 1, "maximum": 5 }
+  ],
+  "initial_world_state": {
+    "cash_flow": 500000,
+    "customer_flow": 5,
+    "competition_count": 70,
+    "monthly_profit": -15000,
+    "payback_ratio": 0.1
+  },
+  "state_metrics": [
+    { "metric_id": "study_budget", "label": "可用留学预算", "unit": "元", "initial_value": 0, "display_order": 1, "source_metric": "cash_flow" },
+    { "metric_id": "application_materials", "label": "申请材料完成度", "unit": "分", "initial_value": 0, "display_order": 2, "source_metric": "customer_flow" },
+    { "metric_id": "admission_competition", "label": "录取竞争与政策", "unit": "分", "initial_value": 0, "display_order": 3, "source_metric": "competition_count" },
+    { "metric_id": "monthly_study_gap", "label": "月度资金缺口", "unit": "元", "initial_value": 0, "display_order": 4, "source_metric": "monthly_profit" },
+    { "metric_id": "application_readiness", "label": "申请准备度", "unit": "%", "initial_value": 0, "display_order": 5, "source_metric": "payback_ratio" }
+  ],
+  "agents": [
+    { "agent_id": "market", "name": "留学市场智能体", "stance": "分析申请趋势与录取竞争", "goal": "评估目标国家和学校的录取难度与就业前景", "action_ids": ["market.analyze_admission", "market.pivot_country"] },
+    { "agent_id": "environment", "name": "政策环境智能体", "stance": "关注签证政策与国际形势", "goal": "监控签证政策、汇率变化与国际关系", "action_ids": ["environment.monitor_visa", "environment.hedge_currency"] },
+    { "agent_id": "personal", "name": "个人发展智能体", "stance": "评估语言能力与适应力", "goal": "提升语言成绩与跨文化适应能力", "action_ids": ["personal.boost_language", "personal.build_network"] },
+    { "agent_id": "risk", "name": "风险评估智能体", "stance": "识别财务与职业风险", "goal": "预警资金断裂、学业困难与归国就业风险", "action_ids": ["risk.budget_control", "risk.career_backup"] }
+  ],
+  "action_effects": [
+    { "action_id": "market.analyze_admission", "effects": { "cash_flow": -8000, "customer_flow": 2, "competition_count": -5, "monthly_profit": 2000, "payback_ratio": 0.05 }, "reason_template": "分析目标院校录取数据，优化申请策略。" },
+    { "action_id": "market.pivot_country", "effects": { "cash_flow": -5000, "customer_flow": 1, "competition_count": -15, "monthly_profit": -3000, "payback_ratio": 0.04 }, "reason_template": "更换目标国家，选择竞争较小的留学目的地。" },
+    { "action_id": "environment.monitor_visa", "effects": { "cash_flow": -2000, "monthly_profit": 500, "payback_ratio": 0.02 }, "reason_template": "密切关注签证政策变动，提前准备应对方案。" },
+    { "action_id": "environment.hedge_currency", "effects": { "cash_flow": -10000, "monthly_profit": 3000, "payback_ratio": 0.03 }, "reason_template": "分批兑换外汇，对冲汇率波动风险。" },
+    { "action_id": "personal.boost_language", "effects": { "cash_flow": -15000, "customer_flow": 1, "monthly_profit": 4000, "payback_ratio": 0.08 }, "reason_template": "强化语言培训，提高申请竞争力。" },
+    { "action_id": "personal.build_network", "effects": { "cash_flow": -5000, "customer_flow": 3, "monthly_profit": 1000, "payback_ratio": 0.06 }, "reason_template": "建立海外人脉网络，为留学生活做准备。" },
+    { "action_id": "risk.budget_control", "effects": { "cash_flow": 20000, "monthly_profit": 2000, "payback_ratio": 0.04 }, "reason_template": "严格控制留学预算，预留应急资金。" },
+    { "action_id": "risk.career_backup", "effects": { "cash_flow": -3000, "customer_flow": -1, "monthly_profit": -1000, "payback_ratio": 0.05 }, "reason_template": "准备国内就业备选方案，降低留学失败风险。" }
+  ],
+  "intervention_effects": [
+    { "action_id": "intervention.apply_scholarship", "effects": { "cash_flow": 40000, "monthly_profit": 2000, "payback_ratio": 0.06 }, "reason_template": "成功申请奖学金，缓解财务压力。" },
+    { "action_id": "intervention.defer_admission", "effects": { "cash_flow": 5000, "customer_flow": -2, "monthly_profit": 5000, "payback_ratio": 0.03 }, "reason_template": "延期入学，先工作积累资金和经验。" },
+    { "action_id": "intervention.part_time_work", "effects": { "cash_flow": 15000, "customer_flow": 1, "monthly_profit": 8000, "payback_ratio": 0.05 }, "reason_template": "留学期间兼职工作，补贴生活费。" }
+  ],
+  "end_conditions": {
+    "bankrupt": { "metric": "cash_flow", "operator": "<=", "threshold": 0 },
+    "goal_reached": { "metric": "payback_ratio", "operator": ">=", "threshold": 0.8 },
+    "steady_state": { "metric": "monthly_profit", "operator": ">=", "threshold": 10000 },
+    "timeout_years": 3
+  },
+  "intervention_rules": [
+    { "rule_id": "fund_shortage", "metric": "cash_flow", "operator": "<=", "threshold": 100000, "event": "留学资金告急，需要做出关键财务决策。", "options": ["申请奖学金/助学贷款", "延期入学先工作"], "option_actions": { "申请奖学金/助学贷款": "intervention.apply_scholarship", "延期入学先工作": "intervention.defer_admission" }, "max_uses": 1 },
+    { "rule_id": "visa_risk", "metric": "competition_count", "operator": ">=", "threshold": 80, "event": "签证政策收紧，留学前景不确定性增加。", "options": ["继续申请", "转向其他国家或国内深造"], "option_actions": { "继续申请": "intervention.apply_scholarship", "转向其他国家或国内深造": "intervention.part_time_work" }, "max_uses": 1 }
+  ]
+}

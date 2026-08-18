@@ -1,0 +1,56 @@
+{
+  "scenario_id": "career_advance",
+  "title": "职场晋升推演",
+  "version": 1,
+  "decision_vars": [
+    { "name": "current_position", "value_type": "string", "required": true, "default": "高级工程师" },
+    { "name": "target_position", "value_type": "string", "required": true, "default": "技术经理" },
+    { "name": "years_experience", "value_type": "integer", "required": true, "default": 5, "minimum": 1, "maximum": 20 },
+    { "name": "span_years", "value_type": "integer", "required": false, "default": 3, "minimum": 1, "maximum": 5 }
+  ],
+  "initial_world_state": {
+    "cash_flow": 300000,
+    "customer_flow": 8,
+    "competition_count": 55,
+    "monthly_profit": 25000,
+    "payback_ratio": 0.2
+  },
+  "state_metrics": [
+    { "metric_id": "career_reserve", "label": "职业缓冲", "unit": "元", "initial_value": 0, "display_order": 1, "source_metric": "cash_flow" },
+    { "metric_id": "work_visibility", "label": "成果可见度", "unit": "分", "initial_value": 0, "display_order": 2, "source_metric": "customer_flow" },
+    { "metric_id": "promotion_competition", "label": "晋升竞争压力", "unit": "分", "initial_value": 0, "display_order": 3, "source_metric": "competition_count" },
+    { "metric_id": "salary_growth", "label": "发展回报", "unit": "元/月", "initial_value": 0, "display_order": 4, "source_metric": "monthly_profit" },
+    { "metric_id": "promotion_readiness", "label": "晋升准备度", "unit": "%", "initial_value": 0, "display_order": 5, "source_metric": "payback_ratio" }
+  ],
+  "agents": [
+    { "agent_id": "market", "name": "职场市场智能体", "stance": "分析行业人才需求与晋升通道", "goal": "评估目标岗位的市场价值与竞争激烈度", "action_ids": ["market.scan_opportunities", "market.build_reputation"] },
+    { "agent_id": "environment", "name": "组织环境智能体", "stance": "关注公司文化与政治格局", "goal": "分析组织内部晋升机制与关键决策者", "action_ids": ["environment.map_politics", "environment.align_strategy"] },
+    { "agent_id": "personal", "name": "个人发展智能体", "stance": "评估能力差距与成长路径", "goal": "弥补技能短板，积累管理经验", "action_ids": ["personal.close_gap", "personal.showcase_value"] },
+    { "agent_id": "risk", "name": "风险评估智能体", "stance": "识别职业风险与替代方案", "goal": "评估跳槽时机与职业倦怠风险", "action_ids": ["risk.assess_jobhop", "risk.prevent_burnout"] }
+  ],
+  "action_effects": [
+    { "action_id": "market.scan_opportunities", "effects": { "cash_flow": -2000, "customer_flow": 3, "competition_count": -3, "monthly_profit": 1000, "payback_ratio": 0.05 }, "reason_template": "扫描外部市场机会，评估自身市场价值。" },
+    { "action_id": "market.build_reputation", "effects": { "cash_flow": -3000, "customer_flow": 5, "monthly_profit": 2000, "payback_ratio": 0.08 }, "reason_template": "通过技术分享和行业交流建立个人品牌。" },
+    { "action_id": "environment.map_politics", "effects": { "cash_flow": -1000, "customer_flow": 2, "monthly_profit": 500, "payback_ratio": 0.04 }, "reason_template": "了解组织决策链，找到晋升关键推动者。" },
+    { "action_id": "environment.align_strategy", "effects": { "cash_flow": -2000, "customer_flow": 1, "monthly_profit": 3000, "payback_ratio": 0.1 }, "reason_template": "将个人目标与公司战略对齐，提升晋升合理性。" },
+    { "action_id": "personal.close_gap", "effects": { "cash_flow": -8000, "customer_flow": 2, "competition_count": -5, "monthly_profit": 4000, "payback_ratio": 0.12 }, "reason_template": "系统学习管理技能，弥补能力差距。" },
+    { "action_id": "personal.showcase_value", "effects": { "cash_flow": -1000, "customer_flow": 4, "monthly_profit": 3000, "payback_ratio": 0.1 }, "reason_template": "主动展示工作成果，提升在决策者中的可见度。" },
+    { "action_id": "risk.assess_jobhop", "effects": { "cash_flow": -500, "customer_flow": 3, "competition_count": -3, "monthly_profit": 5000, "payback_ratio": 0.15 }, "reason_template": "评估外部跳槽可能带来的薪资涨幅与风险。" },
+    { "action_id": "risk.prevent_burnout", "effects": { "cash_flow": -3000, "customer_flow": -3, "monthly_profit": -2000, "payback_ratio": 0.03 }, "reason_template": "调整工作节奏，避免职业倦怠影响长期发展。" }
+  ],
+  "intervention_effects": [
+    { "action_id": "intervention.push_promotion", "effects": { "cash_flow": -5000, "customer_flow": 2, "monthly_profit": 8000, "payback_ratio": 0.2 }, "reason_template": "主动争取晋升机会，提出明确的晋升申请。" },
+    { "action_id": "intervention.accept_lateral", "effects": { "cash_flow": 0, "customer_flow": 4, "monthly_profit": 2000, "payback_ratio": 0.06 }, "reason_template": "接受横向调动，拓宽经验面。" },
+    { "action_id": "intervention.change_company", "effects": { "cash_flow": -2000, "customer_flow": 5, "competition_count": -10, "monthly_profit": 15000, "payback_ratio": 0.25 }, "reason_template": "跳槽到新公司，直接获得目标职级。" }
+  ],
+  "end_conditions": {
+    "bankrupt": { "metric": "cash_flow", "operator": "<=", "threshold": 50000 },
+    "goal_reached": { "metric": "payback_ratio", "operator": ">=", "threshold": 0.85 },
+    "steady_state": { "metric": "monthly_profit", "operator": ">=", "threshold": 40000 },
+    "timeout_years": 3
+  },
+  "intervention_rules": [
+    { "rule_id": "promotion_stuck", "metric": "payback_ratio", "operator": "<=", "threshold": 0.3, "event": "晋升进展缓慢，你需要决定下一步策略。", "options": ["主动争取晋升", "考虑跳槽"], "option_actions": { "主动争取晋升": "intervention.push_promotion", "考虑跳槽": "intervention.change_company" }, "max_uses": 1 },
+    { "rule_id": "burnout_alert", "metric": "customer_flow", "operator": "<=", "threshold": 5, "event": "工作投入度下降，可能面临职业倦怠。", "options": ["调整节奏", "继续硬撑"], "option_actions": { "调整节奏": "intervention.accept_lateral", "继续硬撑": "intervention.push_promotion" }, "max_uses": 2 }
+  ]
+}

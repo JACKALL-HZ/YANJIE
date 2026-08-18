@@ -1,0 +1,27 @@
+# 依赖与虚拟环境
+.venv/
+node_modules/
+frontend/node_modules/
+
+# 本地数据与产物
+chroma_db/
+*.db
+*.sqlite3
+yanjie_dev.db
+yanjie_checkpoint.db
+
+# 版本控制与缓存
+.git/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# 密钥与环境（绝不进镜像）
+.env
+.env.example
+
+# 文档与日志（非运行时必需）
+docs/
+*.log
+
+# 保留：frontend/dist、app/、scenarios/、文档种子数据/ 需打进镜像

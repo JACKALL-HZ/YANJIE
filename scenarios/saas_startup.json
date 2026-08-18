@@ -1,0 +1,229 @@
+{
+  "scenario_id": "saas_startup",
+  "title": "SaaS 软件创业",
+  "version": 1,
+  "decision_vars": [
+    {
+      "name": "budget",
+      "value_type": "integer",
+      "required": true,
+      "default": 500000,
+      "minimum": 100000,
+      "maximum": 5000000
+    },
+    {
+      "name": "city",
+      "value_type": "string",
+      "required": true,
+      "default": "beijing"
+    },
+    {
+      "name": "industry",
+      "value_type": "string",
+      "required": true,
+      "default": "saas"
+    },
+    {
+      "name": "span_years",
+      "value_type": "integer",
+      "required": false,
+      "default": 4,
+      "minimum": 2,
+      "maximum": 5
+    }
+  ],
+  "initial_world_state": {
+    "cash_flow": 500000,
+    "customer_flow": 20,
+    "competition_count": 30,
+    "monthly_profit": -15000,
+    "payback_ratio": 0
+  },
+  "agents": [
+    {
+      "agent_id": "market",
+      "name": "市场智能体",
+      "stance": "关注顾客需求与竞争格局",
+      "goal": "提升获客能力，同时避免耗尽现金储备",
+      "action_ids": ["market.differentiate", "market.hold"]
+    },
+    {
+      "agent_id": "environment",
+      "name": "环境智能体",
+      "stance": "关注所在地与经营环境",
+      "goal": "让产品适应当地市场与经营条件",
+      "action_ids": ["environment.localize", "environment.monitor"]
+    },
+    {
+      "agent_id": "personal",
+      "name": "个人智能体",
+      "stance": "关注创始人的能力与精力",
+      "goal": "让创始人保持可持续的执行节奏",
+      "action_ids": ["personal.stabilize", "personal.defer"]
+    },
+    {
+      "agent_id": "risk",
+      "name": "风险智能体",
+      "stance": "关注下行损失与脆弱点",
+      "goal": "限制不可逆损失和竞争压力",
+      "action_ids": ["risk.contain", "risk.insure"]
+    }
+  ],
+  "action_effects": [
+    {
+      "action_id": "market.differentiate",
+      "effects": {
+        "cash_flow": -50000,
+        "customer_flow": 40,
+        "competition_count": -5,
+        "monthly_profit": 15000,
+        "payback_ratio": 0.12
+      },
+      "reason_template": "Launch premium feature differentiation to capture enterprise clients."
+    },
+    {
+      "action_id": "market.hold",
+      "effects": {
+        "cash_flow": -10000,
+        "customer_flow": 5,
+        "monthly_profit": 2000,
+        "payback_ratio": 0.02
+      },
+      "reason_template": "Maintain current product roadmap and organic growth."
+    },
+    {
+      "action_id": "environment.localize",
+      "effects": {
+        "cash_flow": -20000,
+        "customer_flow": 8,
+        "monthly_profit": 3000,
+        "payback_ratio": 0.03
+      },
+      "reason_template": "Hire local sales team for the target region."
+    },
+    {
+      "action_id": "environment.monitor",
+      "effects": {
+        "cash_flow": -3000,
+        "monthly_profit": 500,
+        "payback_ratio": 0.01
+      },
+      "reason_template": "Analyze market landscape before committing to a region."
+    },
+    {
+      "action_id": "personal.stabilize",
+      "effects": {
+        "cash_flow": -15000,
+        "monthly_profit": 4000,
+        "payback_ratio": 0.05
+      },
+      "reason_template": "Expand engineering team to sustain product velocity."
+    },
+    {
+      "action_id": "personal.defer",
+      "effects": {
+        "cash_flow": -3000,
+        "monthly_profit": 500,
+        "payback_ratio": 0.01
+      },
+      "reason_template": "Keep small team, focus on runway preservation."
+    },
+    {
+      "action_id": "risk.contain",
+      "effects": {
+        "cash_flow": -20000,
+        "competition_count": -3,
+        "monthly_profit": 2000,
+        "payback_ratio": 0.03
+      },
+      "reason_template": "Secure IP and build technical moat against competitors."
+    },
+    {
+      "action_id": "risk.insure",
+      "effects": {
+        "cash_flow": -8000,
+        "monthly_profit": -500,
+        "payback_ratio": 0.01
+      },
+      "reason_template": "Purchase business liability and cyber insurance."
+    }
+  ],
+  "intervention_effects": [
+    {
+      "action_id": "intervention.cut_costs",
+      "effects": {
+        "cash_flow": 80000,
+        "monthly_profit": 8000,
+        "payback_ratio": 0.1
+      },
+      "reason_template": "Reduce cloud infra spend and freeze hiring."
+    },
+    {
+      "action_id": "intervention.expand_marketing",
+      "effects": {
+        "cash_flow": -60000,
+        "customer_flow": 50,
+        "monthly_profit": 15000,
+        "payback_ratio": 0.06
+      },
+      "reason_template": "Launch paid acquisition campaign targeting decision-makers."
+    },
+    {
+      "action_id": "intervention.reprice",
+      "effects": {
+        "cash_flow": 30000,
+        "customer_flow": -10,
+        "monthly_profit": 12000,
+        "payback_ratio": 0.08
+      },
+      "reason_template": "Increase per-seat pricing for enterprise tier."
+    },
+    {
+      "action_id": "intervention.hold",
+      "effects": {
+        "cash_flow": 0,
+        "monthly_profit": 0,
+        "payback_ratio": 0
+      },
+      "reason_template": "Maintain current pricing and growth strategy."
+    }
+  ],
+  "end_conditions": {
+    "bankrupt": {
+      "metric": "cash_flow",
+      "operator": "<=",
+      "threshold": 0
+    },
+    "goal_reached": {
+      "metric": "payback_ratio",
+      "operator": ">=",
+      "threshold": 1
+    },
+    "steady_state": {
+      "metric": "monthly_profit",
+      "operator": ">=",
+      "threshold": 100000
+    },
+    "timeout_years": 5
+  },
+  "intervention_rules": [
+    {
+      "rule_id": "cash_pressure",
+      "metric": "cash_flow",
+      "operator": "<=",
+      "threshold": 150000,
+      "event": "Runway is below 18 months at current burn rate.",
+      "options": ["cut_costs", "expand_marketing"],
+      "max_uses": 1
+    },
+    {
+      "rule_id": "customer_pressure",
+      "metric": "customer_flow",
+      "operator": "<=",
+      "threshold": 15,
+      "event": "User acquisition has stalled — growth is flatlining.",
+      "options": ["reprice", "hold"],
+      "max_uses": 2
+    }
+  ]
+}

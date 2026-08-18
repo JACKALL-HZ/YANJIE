@@ -1,0 +1,44 @@
+# 环境变量（含密钥，禁止提交）
+.env
+deploy/backend.env
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+node_modules/
+
+# 数据库
+*.db
+*.sqlite3
+chroma_db/
+
+# IDE
+.vscode/
+.idea/
+
+# 临时文件
+*.tmp
+pt_out.txt
+dbg_tmp.txt
+
+# 测试
+.pytest_cache/
+htmlcov/
+.coverage
+
+# 本地工作数据（记忆/配置，不进仓库）
+.workbuddy/
+
+# 日志
+*.log
+
+# 调试探针脚本
+lg_probe.py
+lg_probe2.py
+
+# 构建/导出产物
+openapi.json
+pr.txt

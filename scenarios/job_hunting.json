@@ -1,0 +1,56 @@
+{
+  "scenario_id": "job_hunting",
+  "title": "就业求职推演",
+  "version": 1,
+  "decision_vars": [
+    { "name": "target_industry", "value_type": "string", "required": true, "default": "互联网" },
+    { "name": "city", "value_type": "string", "required": true, "default": "杭州" },
+    { "name": "salary_expectation", "value_type": "integer", "required": false, "default": 15000, "minimum": 3000, "maximum": 100000 },
+    { "name": "span_years", "value_type": "integer", "required": false, "default": 1, "minimum": 1, "maximum": 2 }
+  ],
+  "initial_world_state": {
+    "cash_flow": 10000,
+    "customer_flow": 5,
+    "competition_count": 75,
+    "monthly_profit": 0,
+    "payback_ratio": 0
+  },
+  "state_metrics": [
+    { "metric_id": "job_search_reserve", "label": "求职储备", "unit": "元", "initial_value": 0, "display_order": 1, "source_metric": "cash_flow" },
+    { "metric_id": "interview_pipeline", "label": "面试机会", "unit": "个", "initial_value": 0, "display_order": 2, "source_metric": "customer_flow" },
+    { "metric_id": "job_market_competition", "label": "岗位竞争压力", "unit": "分", "initial_value": 0, "display_order": 3, "source_metric": "competition_count" },
+    { "metric_id": "salary_match", "label": "薪资匹配", "unit": "元/月", "initial_value": 0, "display_order": 4, "source_metric": "monthly_profit" },
+    { "metric_id": "offer_readiness", "label": "Offer 准备度", "unit": "%", "initial_value": 0, "display_order": 5, "source_metric": "payback_ratio" }
+  ],
+  "agents": [
+    { "agent_id": "market", "name": "就业市场智能体", "stance": "分析行业需求与岗位供给", "goal": "评估目标行业的招聘趋势与薪资水平", "action_ids": ["market.target_hot_roles", "market.broaden_search"] },
+    { "agent_id": "environment", "name": "经济环境智能体", "stance": "关注宏观经济与行业周期", "goal": "监控经济形势对就业市场的影响", "action_ids": ["environment.track_economy", "environment.identify_growth"] },
+    { "agent_id": "personal", "name": "个人竞争力智能体", "stance": "评估技能匹配度与面试能力", "goal": "提升简历质量与面试表现", "action_ids": ["personal.upskill", "personal.network_referral"] },
+    { "agent_id": "risk", "name": "风险评估智能体", "stance": "识别求职陷阱与职业风险", "goal": "规避不良雇主与职业发展陷阱", "action_ids": ["risk.vet_employer", "risk.negotiate_salary"] }
+  ],
+  "action_effects": [
+    { "action_id": "market.target_hot_roles", "effects": { "cash_flow": -2000, "customer_flow": 8, "competition_count": 5, "monthly_profit": 2000, "payback_ratio": 0.1 }, "reason_template": "瞄准热门岗位，针对性投递简历。" },
+    { "action_id": "market.broaden_search", "effects": { "cash_flow": -1000, "customer_flow": 15, "competition_count": -10, "monthly_profit": -1000, "payback_ratio": 0.06 }, "reason_template": "拓宽求职范围，增加面试机会。" },
+    { "action_id": "environment.track_economy", "effects": { "cash_flow": -500, "customer_flow": 2, "monthly_profit": 500, "payback_ratio": 0.03 }, "reason_template": "跟踪宏观经济指标，预判行业招聘趋势。" },
+    { "action_id": "environment.identify_growth", "effects": { "cash_flow": -1000, "customer_flow": 5, "monthly_profit": 3000, "payback_ratio": 0.08 }, "reason_template": "识别高速增长的细分领域，抢占先机。" },
+    { "action_id": "personal.upskill", "effects": { "cash_flow": -5000, "customer_flow": 3, "competition_count": -5, "monthly_profit": 4000, "payback_ratio": 0.12 }, "reason_template": "学习紧缺技能，提升简历竞争力。" },
+    { "action_id": "personal.network_referral", "effects": { "cash_flow": -2000, "customer_flow": 6, "monthly_profit": 5000, "payback_ratio": 0.15 }, "reason_template": "通过人脉内推，大幅提高面试转化率。" },
+    { "action_id": "risk.vet_employer", "effects": { "cash_flow": -500, "customer_flow": -2, "monthly_profit": 1000, "payback_ratio": 0.04 }, "reason_template": "调查雇主背景，避开经营不善或文化恶劣的公司。" },
+    { "action_id": "risk.negotiate_salary", "effects": { "cash_flow": 0, "monthly_profit": 6000, "payback_ratio": 0.08 }, "reason_template": "合理谈判薪资与福利，提升入职待遇。" }
+  ],
+  "intervention_effects": [
+    { "action_id": "intervention.accept_offer", "effects": { "cash_flow": 5000, "customer_flow": -10, "monthly_profit": 12000, "payback_ratio": 0.3 }, "reason_template": "接受现有offer，结束求职周期。" },
+    { "action_id": "intervention.continue_search", "effects": { "cash_flow": -3000, "customer_flow": 10, "monthly_profit": -2000, "payback_ratio": -0.05 }, "reason_template": "拒绝当前offer，继续寻找更好的机会。" },
+    { "action_id": "intervention.change_industry", "effects": { "cash_flow": -2000, "customer_flow": 8, "competition_count": -15, "monthly_profit": -1000, "payback_ratio": 0.05 }, "reason_template": "转换目标行业，探索新的职业方向。" }
+  ],
+  "end_conditions": {
+    "bankrupt": { "metric": "cash_flow", "operator": "<=", "threshold": 0 },
+    "goal_reached": { "metric": "payback_ratio", "operator": ">=", "threshold": 0.8 },
+    "steady_state": { "metric": "monthly_profit", "operator": ">=", "threshold": 10000 },
+    "timeout_years": 2
+  },
+  "intervention_rules": [
+    { "rule_id": "offer_dilemma", "metric": "payback_ratio", "operator": ">=", "threshold": 0.4, "event": "收到了一个offer，但薪资未达预期。你需要做出选择。", "options": ["接受offer", "继续寻找"], "option_actions": { "接受offer": "intervention.accept_offer", "继续寻找": "intervention.continue_search" }, "max_uses": 1 },
+    { "rule_id": "savings_low", "metric": "cash_flow", "operator": "<=", "threshold": 3000, "event": "储蓄见底，求职压力陡增。", "options": ["接受任何offer", "借债继续求职"], "option_actions": { "接受任何offer": "intervention.accept_offer", "借债继续求职": "intervention.continue_search" }, "max_uses": 1 }
+  ]
+}

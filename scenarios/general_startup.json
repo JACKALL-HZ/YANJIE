@@ -1,0 +1,169 @@
+{
+  "scenario_id": "general_startup",
+  "title": "通用创业",
+  "version": 1,
+  "decision_vars": [
+    {
+      "name": "budget",
+      "value_type": "integer",
+      "required": true,
+      "default": 300000,
+      "minimum": 10000,
+      "maximum": 10000000
+    },
+    {
+      "name": "city",
+      "value_type": "string",
+      "required": true,
+      "default": "待确认"
+    },
+    {
+      "name": "industry",
+      "value_type": "string",
+      "required": true,
+      "default": "待明确"
+    },
+    {
+      "name": "span_years",
+      "value_type": "integer",
+      "required": false,
+      "default": 3,
+      "minimum": 1,
+      "maximum": 5
+    }
+  ],
+  "initial_world_state": {
+    "cash_flow": 300000,
+    "customer_flow": 0,
+    "competition_count": 20,
+    "monthly_profit": 0,
+    "payback_ratio": 0
+  },
+  "agents": [
+    {
+      "agent_id": "market",
+      "name": "市场智能体",
+      "stance": "验证目标客户、竞争格局与增长路径",
+      "goal": "优先找到可重复获取客户的方式",
+      "action_ids": ["market.differentiate", "market.hold"]
+    },
+    {
+      "agent_id": "environment",
+      "name": "环境智能体",
+      "stance": "关注城市、行业周期与政策条件",
+      "goal": "让商业模式适应外部经营环境",
+      "action_ids": ["environment.localize", "environment.monitor"]
+    },
+    {
+      "agent_id": "personal",
+      "name": "个人智能体",
+      "stance": "关注创始人的资源、能力与执行节奏",
+      "goal": "用有限资源完成关键验证",
+      "action_ids": ["personal.stabilize", "personal.defer"]
+    },
+    {
+      "agent_id": "risk",
+      "name": "风险智能体",
+      "stance": "关注现金消耗、合规与不可逆损失",
+      "goal": "为创业尝试设置可执行的止损边界",
+      "action_ids": ["risk.contain", "risk.insure"]
+    }
+  ],
+  "action_effects": [
+    {
+      "action_id": "market.differentiate",
+      "effects": {
+        "cash_flow": -35000,
+        "customer_flow": 24,
+        "competition_count": -2,
+        "monthly_profit": 7000,
+        "payback_ratio": 0.08
+      },
+      "reason_template": "聚焦细分客户与差异化价值，先验证真实付费需求。"
+    },
+    {
+      "action_id": "market.hold",
+      "effects": {
+        "cash_flow": -8000,
+        "customer_flow": 5,
+        "monthly_profit": 800,
+        "payback_ratio": 0.02
+      },
+      "reason_template": "控制营销试错成本，先通过小范围反馈校准产品与定价。"
+    },
+    {
+      "action_id": "environment.localize",
+      "effects": {
+        "cash_flow": -18000,
+        "customer_flow": 12,
+        "monthly_profit": 2500,
+        "payback_ratio": 0.04
+      },
+      "reason_template": "根据所在城市、渠道和行业周期调整获客与交付方式。"
+    },
+    {
+      "action_id": "environment.monitor",
+      "effects": {
+        "cash_flow": -3000,
+        "monthly_profit": 300,
+        "payback_ratio": 0.01
+      },
+      "reason_template": "持续跟踪行业供需、政策变化和竞争者动作，再决定投入节奏。"
+    },
+    {
+      "action_id": "personal.stabilize",
+      "effects": {
+        "cash_flow": -12000,
+        "monthly_profit": 2500,
+        "payback_ratio": 0.04
+      },
+      "reason_template": "明确创始人分工与关键能力缺口，避免执行被琐事拖垮。"
+    },
+    {
+      "action_id": "personal.defer",
+      "effects": {
+        "cash_flow": -2500,
+        "monthly_profit": 300,
+        "payback_ratio": 0.01
+      },
+      "reason_template": "保持精简团队，延后不可逆的人力和固定成本承诺。"
+    },
+    {
+      "action_id": "risk.contain",
+      "effects": {
+        "cash_flow": -10000,
+        "competition_count": -1,
+        "monthly_profit": 1000,
+        "payback_ratio": 0.03
+      },
+      "reason_template": "设定预算上限、阶段目标和止损线，防止试错失控。"
+    },
+    {
+      "action_id": "risk.insure",
+      "effects": {
+        "cash_flow": -5000,
+        "monthly_profit": -200,
+        "payback_ratio": 0.01
+      },
+      "reason_template": "补齐必要合同、合规和风险保障，降低突发事件的损失。"
+    }
+  ],
+  "end_conditions": {
+    "bankrupt": {
+      "metric": "cash_flow",
+      "operator": "<=",
+      "threshold": 0
+    },
+    "goal_reached": {
+      "metric": "payback_ratio",
+      "operator": ">=",
+      "threshold": 1
+    },
+    "steady_state": {
+      "metric": "monthly_profit",
+      "operator": ">=",
+      "threshold": 60000
+    },
+    "timeout_years": 5
+  }
+}
