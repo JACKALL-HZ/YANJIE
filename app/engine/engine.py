@@ -49,6 +49,18 @@ from app.db.repository import EventRepo, MessageRepo, ScenarioRepo, SimulationRe
 EngineEvent = SimulationEvent
 
 
+def _next_or_none(iterator: Iterator) -> Any:
+    """从同步生成器安全取下一个元素；耗尽返回 None。
+
+    用于在 asyncio.to_thread 中逐部驱动同步生成器：StopIteration 不能从
+    Future 里抛出（Python 3.12+ 会报 RuntimeError），用哨兵值代替。
+    """
+    try:
+        return next(iterator)
+    except StopIteration:
+        return None
+
+
 class SimulationEngine:
     def __init__(
         self,
@@ -1098,7 +1110,10 @@ class SimulationEngine:
     ) -> AsyncIterator[SimulationEvent]:
         import os
         delay_ms = float(os.getenv("SIMULATION_EVENT_DELAY_MS", "0"))
-        for event in self.iter_events(
+        # 同步生成器内部调用 LangGraph / LLM，均为同步阻塞；若在事件循环里直接
+        # 迭代会把 uvicorn 事件循环占死，导致并发请求（如登录）全部超时。
+        # 因此逐步用 asyncio.to_thread 拉到线程池执行，每次 yield 让出事件循环。
+        iterator = self.iter_events(
             decision_vars,
             user_profile=user_profile,
             conversation_history=conversation_history,
@@ -1108,7 +1123,12 @@ class SimulationEngine:
             db=db,
             user_id=user_id,
             owner_key=owner_key,
-        ):
+        )
+        while True:
+            # StopIteration 不能从 to_thread 的 Future 里抛出，用哨兵值代替
+            event = await asyncio.to_thread(_next_or_none, iterator)
+            if event is None:
+                break
             yield event
             if delay_ms > 0:
                 await asyncio.sleep(delay_ms / 1000)
