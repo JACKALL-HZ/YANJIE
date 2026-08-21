@@ -1,6 +1,7 @@
 """推演业务编排 —— 创建引擎、跑推演、流式输出、持久化。"""
 
 from collections.abc import AsyncIterator
+import asyncio
 import logging
 from typing import Any
 
@@ -115,7 +116,7 @@ class SimulationService:
         finally:
             engine.close()
 
-    def aiter_events(
+    async def aiter_events(
         self,
         source: DecisionSource,
         decision_vars: dict[str, Any],
@@ -128,27 +129,30 @@ class SimulationService:
         user_id: str | None = None,
         owner_key: str | None = None,
     ) -> AsyncIterator[EngineEvent]:
-        """异步流式推演，逐个返回 SimulationEvent（可选持久化）。"""
-        engine = SimulationEngine(source, settings=self.settings)
+        """异步流式推演，逐个返回 SimulationEvent（可选持久化）。
 
-        async def stream() -> AsyncIterator[EngineEvent]:
-            try:
-                async for event in engine.aiter_events(
-                    decision_vars,
-                    user_profile=user_profile,
-                    conversation_history=conversation_history,
-                    intervention_choices=intervention_choices,
-                    strategy_directives=strategy_directives,
-                    success_definition=success_definition,
-                    db=db,
-                    user_id=user_id,
-                    owner_key=owner_key,
-                ):
-                    yield event
-            finally:
-                engine.close()
-
-        return stream()
+        引擎构造（含 MCP 握手、Chroma、checkpointer、graph 构建）较重，
+        必须在 asyncio.to_thread 中执行，避免阻塞事件循环导致
+        SSE 推演期间其他 HTTP 请求（如登录）全部挂起。
+        """
+        engine = await asyncio.to_thread(
+            lambda: SimulationEngine(source, settings=self.settings)
+        )
+        try:
+            async for event in engine.aiter_events(
+                decision_vars,
+                user_profile=user_profile,
+                conversation_history=conversation_history,
+                intervention_choices=intervention_choices,
+                strategy_directives=strategy_directives,
+                success_definition=success_definition,
+                db=db,
+                user_id=user_id,
+                owner_key=owner_key,
+            ):
+                yield event
+        finally:
+            engine.close()
 
     def resume(
         self,
