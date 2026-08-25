@@ -28,6 +28,7 @@ from app.engine.risk_graph import build_risk_dag
 from app.schemas.api import (
     CompareRequest,
     CompareResponse,
+    CompareSessionsRequest,
     SimulationRequest,
     SimulationResponse,
 )
@@ -163,6 +164,74 @@ def compare_simulations(
         scenario_id=request.scenario_id,
         a=_to_response(state_a),
         b=_to_response(state_b),
+        comparison=comparison,
+    )
+
+
+def _session_row_to_response(row) -> SimulationResponse:
+    """从数据库 session row 重建 SimulationResponse（用于对比已有推演结果）。"""
+    agent_states = dict(row.agent_states or {})
+    pause_reason = restore_pause_reason(row.phase, agent_states, None)
+    return SimulationResponse(
+        session_id=row.id,
+        scenario_id=row.scenario_id,
+        phase=row.phase,
+        year=row.current_year,
+        result=row.result,
+        timeline=row.timeline or [],
+        score=row.score,
+        score_detail=row.score_detail or {},
+        risks=row.risks or [],
+        action_plan=row.action_plan or [],
+        startup_settlement=agent_states.get("startup_settlement", {}),
+        pending_intervention=agent_states.get("pending_intervention"),
+        pending_decision_preview=agent_states.get("pending_decision_preview"),
+        pause_reason=pause_reason,
+    )
+
+
+@router.post("/compare-sessions", response_model=CompareResponse)
+def compare_existing_sessions(
+    request: CompareSessionsRequest,
+    db: Session = Depends(get_db),
+    actor = Depends(get_request_actor),
+) -> CompareResponse:
+    """从两个已有推演 session 重建 A/B 对比结果（不重跑推演）。
+
+    要求两个 session 属于同一场景、都属于当前用户、都已 completed。
+    """
+    # 复用全局权限校验：存在性 + 归属，不存在/非归属一律 404，避免泄露资源存在性
+    row_a = assert_session_owner(request.session_id_a, db, actor)
+    row_b = assert_session_owner(request.session_id_b, db, actor)
+
+    if row_a.scenario_id != row_b.scenario_id:
+        raise HTTPException(
+            status_code=422,
+            detail=f"sessions must be from the same scenario (A={row_a.scenario_id}, B={row_b.scenario_id})",
+        )
+
+    if row_a.phase != "completed" or row_b.phase != "completed":
+        raise HTTPException(
+            status_code=422,
+            detail=f"both sessions must be completed (A={row_a.phase}, B={row_b.phase})",
+        )
+
+    if not row_a.world_state or not row_b.world_state:
+        raise HTTPException(status_code=422, detail="session world state missing, cannot compare")
+    world_a = dict(row_a.world_state or {})
+    world_b = dict(row_b.world_state or {})
+    comparison = compare_states(
+        world_a,
+        row_a.result or "paused",
+        world_b,
+        row_b.result or "paused",
+        row_a.score,
+        row_b.score,
+    )
+    return CompareResponse(
+        scenario_id=row_a.scenario_id,
+        a=_session_row_to_response(row_a),
+        b=_session_row_to_response(row_b),
         comparison=comparison,
     )
 

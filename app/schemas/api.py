@@ -73,6 +73,13 @@ class CompareRequest(RequestModel):
     success_definition: dict[str, Any] | None = None
 
 
+class CompareSessionsRequest(BaseModel):
+    """从两个已有 session 重建对比结果，不重跑推演。"""
+
+    session_id_a: str = Field(..., max_length=36)
+    session_id_b: str = Field(..., max_length=36)
+
+
 class CompareResponse(BaseModel):
     model_config = ConfigDict(extra="forbid")
 

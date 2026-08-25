@@ -63,6 +63,13 @@ function resetSimulation() {
   sim.reset()
 }
 
+function goCompare() {
+  const query: Record<string, string> = {}
+  if (scenarioId.value) query.scenario = scenarioId.value
+  if (sim.sessionId) query.from = sim.sessionId
+  router.push({ path: '/compare', query })
+}
+
 watch(() => sim.phase, (phase) => {
   if (phase === 'connecting' || phase === 'running') {
     clearLoaderDismissTimer()
@@ -882,6 +889,14 @@ const parameterHint = computed(() => {
         </div>
         <div class="flex items-center gap-3">
           <span class="rounded-chip border px-3 py-1 font-mono text-xs" :class="statusClass">{{ statusText }}</span>
+          <FancyButton
+            v-if="sim.phase === 'completed'"
+            size="sm"
+            variant="ghost"
+            @click="goCompare"
+          >
+            对比其他方案
+          </FancyButton>
           <FancyButton
             v-if="sim.phase === 'completed'"
             size="sm"

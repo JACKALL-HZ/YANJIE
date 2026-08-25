@@ -1,4 +1,4 @@
-"""决策日记 + 现实校准 测试。"""
+"""决策日记 + 现实校准 + 统计 测试。"""
 
 import pytest
 from fastapi.testclient import TestClient
@@ -71,6 +71,25 @@ class TestDiaryCRUD:
         resp = client.put("/api/diary/nonexistent", json={"notes": "test"})
         assert resp.status_code == 404
 
+    def test_list_returns_scenario_title(self, client):
+        """list 接口应返回 scenario_title 中文名。"""
+        sid = _create_session(client)
+        resp = client.get("/api/diary")
+        assert resp.status_code == 200
+        items = resp.json()
+        found = [i for i in items if i["session_id"] == sid]
+        assert len(found) == 1
+        assert found[0]["scenario_title"] == "奶茶店创业"
+
+    def test_list_returns_result_label(self, client):
+        """list 接口应返回 result_label 中文标签。"""
+        sid = _create_session(client)
+        resp = client.get("/api/diary")
+        items = resp.json()
+        found = [i for i in items if i["session_id"] == sid][0]
+        assert "result_label" in found
+        assert "calibration_grade" in found
+
 
 class TestCalibration:
     """现实校准测试。"""
@@ -79,7 +98,12 @@ class TestCalibration:
         sid = _create_completed_session(client)
         resp = client.put(f"/api/diary/{sid}/calibration", json={"actual_result": "steady"})
         assert resp.status_code == 200
-        assert resp.json()["actual_result"] == "steady"
+        data = resp.json()
+        assert data["actual_result"] == "steady"
+        assert "simulated_result_label" in data
+        assert "actual_result_label" in data
+        assert "calibration_grade" in data
+        assert "summary" in data
 
     def test_get_calibration(self, client):
         sid = _create_completed_session(client)
@@ -90,20 +114,69 @@ class TestCalibration:
         assert "simulated_result" in data
         assert "actual_result" in data
         assert "calibration_score" in data
+        assert "simulated_result_label" in data
+        assert "actual_result_label" in data
+        assert "calibration_grade" in data
+        assert "summary" in data
 
     def test_calibration_match_perfect(self, client):
         sid = _create_completed_session(client)
-        # 先获取 simulated result
-        sim_resp = client.get(f"/api/diary/{sid}/calibration")
-        if sim_resp.status_code == 200:
-            sim_result = sim_resp.json().get("simulated_result", "steady")
+        sim = client.get(f"/api/diary/{sid}/calibration").json()
+        sim_result = sim.get("simulated_result", "steady")
+        # 校准值优先取「与推演结果相同」（若属合法枚举），否则用 steady 验证「不同→低分」
+        actual = sim_result if sim_result in ("goal_reached", "steady", "bankrupt", "timeout") else "steady"
+        put = client.put(f"/api/diary/{sid}/calibration", json={"actual_result": actual})
+        assert put.status_code == 200
+        data = client.get(f"/api/diary/{sid}/calibration").json()
+        if sim_result == actual:
+            assert data["calibration_score"] == 1.0
+            assert data["calibration_grade"] == "高度准确"
         else:
-            sim_result = "steady"
+            assert data["calibration_score"] in (0.0, 0.5)
 
-        client.put(f"/api/diary/{sid}/calibration", json={"actual_result": sim_result})
-        resp = client.get(f"/api/diary/{sid}/calibration")
-        assert resp.json()["calibration_score"] == 1.0
+    def test_calibration_summary_content(self, client):
+        """校准总结应包含推演和现实结果的中文标签。"""
+        sid = _create_completed_session(client)
+        resp = client.put(f"/api/diary/{sid}/calibration", json={"actual_result": "bankrupt"})
+        summary = resp.json()["summary"]
+        assert len(summary) > 10
+        assert "推演" in summary or "现实" in summary
 
     def test_nonexistent_calibration_404(self, client):
         resp = client.get("/api/diary/nonexistent/calibration")
         assert resp.status_code == 404
+
+
+class TestDiaryStats:
+    """决策日记统计端点测试。"""
+
+    def test_stats_returns_structure(self, client):
+        """stats 端点应返回完整统计结构。"""
+        resp = client.get("/api/diary/stats")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert "total_entries" in data
+        assert "calibrated_count" in data
+        assert "uncalibrated_count" in data
+        assert "avg_calibration_score" in data
+        assert "result_distribution" in data
+        assert "tag_distribution" in data
+        assert "grade_distribution" in data
+
+    def test_stats_counts_after_operations(self, client):
+        """创建会话 + 打标签后，stats 应反映增量。"""
+        before = client.get("/api/diary/stats").json()
+        sid = _create_session(client)
+        client.put(f"/api/diary/{sid}", json={"tags": ["统计测试标签"]})
+        after = client.get("/api/diary/stats").json()
+        assert after["total_entries"] >= before["total_entries"] + 1
+        assert "统计测试标签" in after["tag_distribution"]
+
+    def test_stats_grade_distribution_keys(self, client):
+        """grade_distribution 应包含四个固定 key。"""
+        data = client.get("/api/diary/stats").json()
+        gd = data["grade_distribution"]
+        assert "高度准确" in gd
+        assert "部分偏差" in gd
+        assert "显著偏差" in gd
+        assert "未校准" in gd

@@ -3,6 +3,7 @@ export default { name: 'CompareView' }
 </script>
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import NavBar from '@/components/layout/NavBar.vue'
 import GlassPanel from '@/components/ui/GlassPanel.vue'
 import FancyButton from '@/components/ui/FancyButton.vue'
@@ -20,6 +21,7 @@ import {
   toDecisionPayload,
 } from '@/utils/decision-vars'
 
+const route = useRoute()
 const scenarios = useScenariosStore()
 const scenarioId = ref('')
 const formA = ref<DecisionValues>({})
@@ -30,6 +32,8 @@ const loading = ref(false)
 const formLoading = ref(false)
 const errorMsg = ref<string | null>(null)
 const result = ref<CompareResponse | null>(null)
+const sessionMode = ref(false)
+const fromSession = ref<string | undefined>(undefined)
 
 const definitions = computed(() =>
   scenarios.current?.scenario_id === scenarioId.value
@@ -53,15 +57,56 @@ const canRun = computed(() =>
 
 onMounted(async () => {
   if (scenarios.list.length === 0) await scenarios.fetchList()
-  if (scenarios.list.length > 0) scenarioId.value = scenarios.list[0].scenario_id
+
+  // 从 URL query 读 session 对比模式
+  const mode = route.query.mode as string | undefined
+  const sidA = route.query.a as string | undefined
+  const sidB = route.query.b as string | undefined
+
+  if (mode === 'sessions' && sidA && sidB) {
+    sessionMode.value = true
+    showParams.value = false
+    await runSessionCompare(sidA, sidB)
+    return
+  }
+
+  // 从 SimView 跳来时预选场景，并把当前推演作为方案 A 的基准
+  const presetScenario = route.query.scenario as string | undefined
+  const from = route.query.from as string | undefined
+  if (presetScenario && scenarios.list.some(s => s.scenario_id === presetScenario)) {
+    fromSession.value = from
+    scenarioId.value = presetScenario
+  } else if (scenarios.list.length > 0) {
+    scenarioId.value = scenarios.list[0].scenario_id
+  }
 })
+
+async function runSessionCompare(sidA: string, sidB: string) {
+  loading.value = true
+  errorMsg.value = null
+  result.value = null
+  try {
+    result.value = await api.post<CompareResponse>('/simulations/compare-sessions', {
+      session_id_a: sidA,
+      session_id_b: sidB,
+    })
+    scenarioId.value = result.value.scenario_id
+  } catch (error) {
+    errorMsg.value = error instanceof ApiRequestError ? error.message : (error as Error).message
+  } finally {
+    loading.value = false
+  }
+}
 
 watch(scenarioId, async (nextScenarioId) => {
   if (!nextScenarioId) return
-  await loadScenario(nextScenarioId)
+  // 对比已有 session 模式下，结果已由 compare-sessions 返回，无需重载场景参数表单（否则会清空刚拿到的对比结果）
+  if (sessionMode.value) return
+  await loadScenario(nextScenarioId, fromSession.value)
+  fromSession.value = undefined
 })
 
-async function loadScenario(nextScenarioId: string) {
+async function loadScenario(nextScenarioId: string, presetFrom?: string) {
   formLoading.value = true
   errorMsg.value = null
   result.value = null
@@ -74,6 +119,22 @@ async function loadScenario(nextScenarioId: string) {
     const defaults = createDecisionValues(scenarios.current.decision_vars)
     formA.value = { ...defaults }
     formB.value = { ...defaults }
+
+    // 从 SimView 跳来：把刚推完的推演决策变量预填为方案 A
+    if (presetFrom && scenarios.current?.scenario_id === nextScenarioId) {
+      try {
+        const source = await api.get<{ decision_vars: Record<string, unknown> }>(`/sessions/${presetFrom}`)
+        const vars = source.decision_vars ?? {}
+        for (const definition of definitions.value) {
+          const raw = vars[definition.name]
+          if (raw !== undefined && raw !== null && raw !== '') {
+            formA.value[definition.name] = definition.value_type === 'string' ? String(raw) : Number(raw)
+          }
+        }
+      } catch {
+        // 预填失败不影响主流程，方案 A 保留默认值
+      }
+    }
   } catch (error) {
     formA.value = {}
     formB.value = {}
@@ -184,14 +245,23 @@ const scoreBarOption = computed(() => {
       <h1 class="font-display text-3xl font-bold tracking-tight md:text-4xl">分支对比</h1>
       <p class="mt-3 max-w-[580px] text-sm text-ink-secondary">同一场景、两套条件，查看哪条路径更符合你的目标和风险承受能力。</p>
 
-      <div class="mt-8 flex flex-wrap items-center gap-4">
-        <select v-model="scenarioId" :disabled="loading || formLoading" class="rounded-btn border border-white/10 bg-surface-1 px-4 py-2.5 text-sm outline-none focus:border-brand/50 disabled:opacity-50"><option value="" disabled>选择场景</option><option v-for="scenario in scenarios.list" :key="scenario.scenario_id" :value="scenario.scenario_id">{{ scenario.title }}</option></select>
-        <FancyButton :disabled="!canRun" @click="run">{{ formLoading ? '加载参数中...' : loading ? '双路推演中...' : '开始对比' }}</FancyButton>
+      <!-- session 对比模式提示 -->
+      <div v-if="sessionMode" class="mt-4 rounded-btn border border-cyan-glow/20 bg-cyan-glow/5 px-4 py-2.5 text-xs text-cyan-glow">
+        正在对比两场已完成的推演记录，结果直接从历史数据重建，无需重跑。
+        <button class="ml-2 underline hover:text-cyan-glow/80" @click="sessionMode = false; showParams = true">切换为实时对比</button>
       </div>
+
+      <!-- 实时对比模式：场景选择 + 参数输入 -->
+      <template v-if="!sessionMode">
+        <div class="mt-8 flex flex-wrap items-center gap-4">
+          <select v-model="scenarioId" :disabled="loading || formLoading" class="rounded-btn border border-white/10 bg-surface-1 px-4 py-2.5 text-sm outline-none focus:border-brand/50 disabled:opacity-50"><option value="" disabled>选择场景</option><option v-for="scenario in scenarios.list" :key="scenario.scenario_id" :value="scenario.scenario_id">{{ scenario.title }}</option></select>
+          <FancyButton :disabled="!canRun" @click="run">{{ formLoading ? '加载参数中...' : loading ? '双路推演中...' : '开始对比' }}</FancyButton>
+        </div>
+      </template>
 
       <div v-if="errorMsg" class="mt-6 rounded-btn border border-agent-risk/30 bg-agent-risk/10 px-4 py-3 text-sm text-agent-risk">{{ errorMsg }}</div>
 
-      <section v-if="definitions.length" class="mt-8">
+      <section v-if="!sessionMode && definitions.length" class="mt-8">
         <div class="mb-3 flex items-center justify-between gap-3"><div><h2 class="font-display text-lg font-bold text-ink-primary">对比条件</h2><p class="mt-1 text-xs text-ink-muted">两套方案可分别修改，必填条件需要完整填写。</p></div><button v-if="optionalDefinitions.length" class="border border-white/10 px-2.5 py-1 text-xs text-ink-secondary transition-colors hover:border-cyan-glow/40 hover:text-cyan-glow" @click="showOptional = !showOptional">{{ showOptional ? '收起可选条件' : `更多可选条件（${optionalDefinitions.length}）` }}</button></div>
         <div class="grid gap-5 lg:grid-cols-2">
           <GlassPanel v-for="plan in plans" :key="plan.key" :class="winner === plan.key ? 'border-brand/40' : ''">

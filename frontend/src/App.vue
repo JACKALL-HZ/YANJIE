@@ -23,22 +23,24 @@ onMounted(() => {
 </script>
 
 <template>
-  <AppBackground v-if="showBackground" />
+  <div class="min-h-screen overflow-x-hidden">
+    <AppBackground v-if="showBackground" />
 
-  <RouterView v-slot="{ Component }">
-    <Transition
-      enter-active-class="transition duration-300 ease-smooth"
-      enter-from-class="opacity-0 translate-y-2"
-      leave-active-class="transition duration-200 ease-smooth"
-      leave-to-class="opacity-0"
-      mode="out-in"
-    >
-      <KeepAlive include="SimView,CompareView">
-        <component
-          :is="Component"
-          :key="`${auth.user?.id || 'anonymous'}:${String(route.name || '')}`"
-        />
-      </KeepAlive>
-    </Transition>
-  </RouterView>
+    <RouterView v-slot="{ Component }">
+      <Transition
+        enter-active-class="transition duration-300 ease-smooth"
+        enter-from-class="opacity-0 translate-y-2"
+        leave-active-class="transition duration-200 ease-smooth"
+        leave-to-class="opacity-0"
+        mode="out-in"
+      >
+        <KeepAlive include="SimView,CompareView">
+          <component
+            :is="Component"
+            :key="`${auth.user?.id || 'anonymous'}:${String(route.name || '')}`"
+          />
+        </KeepAlive>
+      </Transition>
+    </RouterView>
+  </div>
 </template>

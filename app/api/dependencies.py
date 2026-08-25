@@ -170,6 +170,9 @@ def assert_session_owner(
     session = SimulationRepo(db).get(session_id)
     if session is None:
         raise HTTPException(status_code=404, detail="session not found")
+    # 历史遗留数据：未绑定任何归属标识（早期匿名推演），视为公开可访问，向后兼容。
+    if session.user_id is None and session.owner_key is None:
+        return session
     if session.user_id == actor.user_id and actor.user_id is not None:
         return session
     if session.owner_key == actor.anonymous_key and actor.anonymous_key is not None:

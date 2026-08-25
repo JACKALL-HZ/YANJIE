@@ -1,12 +1,15 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import NavBar from '@/components/layout/NavBar.vue'
 import GlassPanel from '@/components/ui/GlassPanel.vue'
 import SkeletonCard from '@/components/ui/SkeletonCard.vue'
 import AnimatedNumber from '@/components/ui/AnimatedNumber.vue'
+import FancyButton from '@/components/ui/FancyButton.vue'
 import { api } from '@/api/client'
 import type { SessionReport, SessionSummary } from '@/api/types'
 
+const router = useRouter()
 const sessions = ref<SessionSummary[]>([])
 const loading = ref(false)
 const errorMsg = ref<string | null>(null)
@@ -15,11 +18,61 @@ const reportCache = ref<Record<string, SessionReport>>({})
 const reportLoading = ref<string | null>(null)
 const reportError = ref<Record<string, string>>({})
 
+// 对比选择
+const selectedIds = ref<Set<string>>(new Set())
+const compareBusy = ref(false)
+const compareError = ref<string | null>(null)
+
 const sorted = computed(() =>
   [...sessions.value].sort((a, b) =>
     String(b.created_at ?? '').localeCompare(String(a.created_at ?? '')),
   ),
 )
+
+// 可对比的记录：已完成的
+const comparableSessions = computed(() =>
+  sorted.value.filter(s => s.phase === 'completed'),
+)
+
+const selectedCount = computed(() => selectedIds.value.size)
+const canCompare = computed(() => selectedCount.value === 2 && !compareBusy.value)
+
+function toggleSelect(id: string) {
+  if (selectedIds.value.has(id)) {
+    selectedIds.value.delete(id)
+  } else if (selectedIds.value.size < 2) {
+    selectedIds.value.add(id)
+  }
+  // 触发响应式更新
+  selectedIds.value = new Set(selectedIds.value)
+}
+
+function clearSelection() {
+  selectedIds.value = new Set()
+  compareError.value = null
+}
+
+async function startCompare() {
+  if (!canCompare.value) return
+  const ids = [...selectedIds.value]
+  compareBusy.value = true
+  compareError.value = null
+  try {
+    // 直接跳到 CompareView，带 session ids 作为 query
+    router.push({
+      path: '/compare',
+      query: {
+        mode: 'sessions',
+        a: ids[0],
+        b: ids[1],
+      },
+    })
+  } catch (e) {
+    compareError.value = (e as Error).message
+  } finally {
+    compareBusy.value = false
+  }
+}
 
 async function fetchSessions() {
   loading.value = true
@@ -135,6 +188,16 @@ function messageRoleLabel(role: string, agentId?: string | null) {
   return '智能体'
 }
 
+function resultLabel(result?: string | null): string {
+  return ({
+    goal_reached: '目标达成',
+    steady: '稳定运营',
+    bankrupt: '破产',
+    timeout: '超时',
+    user_ended: '主动结束',
+  } as Record<string, string>)[result || ''] || result || '—'
+}
+
 onMounted(fetchSessions)
 </script>
 
@@ -147,6 +210,23 @@ onMounted(fetchSessions)
       <h1 class="font-display text-3xl font-bold tracking-tight md:text-4xl">推演历史</h1>
       <p class="mt-3 max-w-[560px] text-sm text-ink-secondary">每一次推演都被完整保存，可随时查看决策与各年度结论。</p>
 
+      <!-- 对比操作栏 -->
+      <div v-if="comparableSessions.length >= 2" class="mt-6 flex flex-wrap items-center gap-3 rounded-btn border border-cyan-glow/20 bg-cyan-glow/5 px-4 py-3">
+        <div class="flex items-center gap-2">
+          <span class="text-xs font-medium text-cyan-glow">方案对比</span>
+          <span class="text-[11px] text-ink-muted">
+            已选 {{ selectedCount }}/2 · 勾选两条已完成记录即可对比
+          </span>
+        </div>
+        <div class="ml-auto flex items-center gap-2">
+          <FancyButton v-if="selectedCount > 0" size="sm" variant="ghost" @click="clearSelection">清空</FancyButton>
+          <FancyButton size="sm" :disabled="!canCompare" @click="startCompare">
+            {{ compareBusy ? '加载中…' : selectedCount === 2 ? '开始对比' : `还需选 ${2 - selectedCount} 条` }}
+          </FancyButton>
+        </div>
+        <p v-if="compareError" class="w-full text-xs text-agent-risk">{{ compareError }}</p>
+      </div>
+
       <div v-if="loading" class="mt-10 space-y-4">
         <SkeletonCard v-for="n in 4" :key="n" :lines="2" />
       </div>
@@ -158,11 +238,30 @@ onMounted(fetchSessions)
       </GlassPanel>
 
       <div v-else class="mt-10 space-y-3">
-        <section v-for="session in sorted" :key="session.id" class="glass overflow-hidden rounded-card">
+        <section v-for="session in sorted" :key="session.id" class="glass overflow-hidden rounded-card" :class="selectedIds.has(session.id) ? 'ring-1 ring-cyan-glow/40' : ''">
           <div class="flex flex-wrap items-center gap-x-4 gap-y-2 px-5 py-4">
+            <!-- 对比复选框（仅已完成记录显示） -->
+            <label
+              v-if="session.phase === 'completed'"
+              class="relative z-10 flex shrink-0 cursor-pointer items-center gap-2"
+              @click.stop
+            >
+              <input
+                type="checkbox"
+                :checked="selectedIds.has(session.id)"
+                class="pointer-events-auto h-[18px] w-[18px] accent-cyan-glow"
+                :disabled="selectedIds.size >= 2 && !selectedIds.has(session.id)"
+                @change="toggleSelect(session.id)"
+              />
+              <span class="select-none text-[11px] text-ink-muted">对比</span>
+            </label>
+
             <button class="min-w-0 flex-1 text-left" @click="toggleReport(session.id)">
               <p class="font-medium text-ink-primary">{{ session.scenario_title }}</p>
-              <p class="mt-1 font-mono text-[10px] text-ink-muted">{{ formatDate(session.created_at) }} · 第 {{ session.current_year ?? 0 }} 年</p>
+              <p class="mt-1 font-mono text-[10px] text-ink-muted">
+                {{ formatDate(session.created_at) }} · 第 {{ session.current_year ?? 0 }} 年
+                <span v-if="session.result" class="ml-2 text-ink-secondary">{{ resultLabel(session.result) }}</span>
+              </p>
             </button>
             <span class="rounded-chip border px-2.5 py-0.5 text-[10px]" :class="phaseClass(session.phase ?? '')">{{ phaseLabel(session.phase ?? '') }}</span>
             <span v-if="session.score != null" class="font-mono text-sm text-cyan-glow tabular-nums">
